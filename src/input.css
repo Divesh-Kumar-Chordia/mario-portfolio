@@ -94,6 +94,20 @@
   /* ---- touch pad ---- */
   .pad-btn { @apply grid h-14 w-14 place-items-center border-3 border-ink bg-white/90 font-body text-[20px] font-bold text-ink shadow-px active:translate-y-1 active:shadow-none; touch-action: none; }
 
+  /* ---- tutorial coach bubble + pointer ---- */
+  .coach { @apply pointer-events-none absolute left-0 top-0 z-30 hidden w-max max-w-[min(300px,80vw)] border-3 border-ink bg-white px-3 py-2 text-center font-pixel text-[8px] leading-4 text-ink shadow-px; }
+  .coach.is-shown { @apply block; }
+  .coach::after { content: ""; @apply absolute top-full -translate-x-1/2; left: var(--tail, 50%); border: 8px solid transparent; border-top-color: #000; }
+  .coach kbd { @apply mx-0.5 inline-block min-w-[20px] border-2 border-ink bg-coin px-1 font-body text-[12px] font-bold leading-4; }
+  .pointer-arrow { @apply pointer-events-none absolute left-0 top-0 z-30 animate-bob; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 14px solid #F8B800; filter: drop-shadow(2px 2px 0 #000); }
+
+  /* ? blocks shimmer like the real thing, and lift on hover */
+  @keyframes shine { 0%, 60%, 100% { filter: none; } 70%, 90% { filter: brightness(1.18) saturate(1.2); } 80% { filter: brightness(.88); } }
+  .tile-block img[src$="qblock.svg"], .qb img[src$="qblock.svg"] { animation: shine 1.6s steps(1) infinite; }
+  .tile-block { @apply transition-transform hover:-translate-y-1; }
+  .tile-block:hover img { filter: drop-shadow(0 4px 0 rgba(0,0,0,.25)); }
+  [data-warp] { @apply cursor-pointer; }
+
   /* ---- skill ? blocks ---- */
   .qb { @apply relative block h-10 w-10 transition-transform hover:-translate-y-1; }
   .qb img { @apply h-full w-full; }

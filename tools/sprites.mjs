@@ -415,4 +415,11 @@ svg([
   "....KK....KK....",
 ], "princess");
 
+
+/* ---------- HUD icons (compact buttons on phones) ---------- */
+svg(["...WWW..", "..WWW...", ".WWW....", ".WWW....", ".WWW....", ".WWWW...", "..WWWWW.", "...WWW.."], "icon-moon");
+svg(["Y..Y..Y.", ".Y.Y.Y..", "..YYY...", "YYYYYYY.", "..YYY...", ".Y.Y.Y..", "Y..Y..Y.", "........"], "icon-sun");
+svg(["...W....", "..WW.W..", "WWWW..W.", "WWWW..W.", "WWWW..W.", "..WW.W..", "...W....", "........"], "icon-sound-on");
+svg(["...W....", "..WW....", "WWWW.W.W", "WWWW..W.", "WWWW.W.W", "..WW....", "...W....", "........"], "icon-sound-off");
+
 console.log("sprites written to assets/sprites/");

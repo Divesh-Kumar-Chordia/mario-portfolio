@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Super Divesh Bros. — Divesh Kumar Chordia</title>
-  <meta name="description" content="Divesh Kumar Chordia — data and platform engineer at Contentstack, open to work. Built the Go audit-logging platform behind billions of logs, Spark pipelines and the Analytics API behind 2B+ monthly calls." />
+  <meta name="description" content="Divesh Kumar Chordia — software, data and AI engineer at Contentstack, open to SDE, AI Engineer and Data Engineer roles. Built the Go audit-logging platform behind billions of logs, Spark pipelines and the Analytics API behind 2B+ monthly calls." />
   <meta name="theme-color" content="#5C94FC" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Super Divesh Bros. — Divesh Kumar Chordia" />
-  <meta property="og:description" content="Data & platform engineer at Contentstack. Open to work. Press start." />
+  <meta property="og:description" content="Software, data and AI engineer at Contentstack. Open to SDE, AI and data roles. Press start." />
   <meta property="og:url" content="https://divesh-kumar-chordia.github.io/mario-portfolio/" />
   <meta property="og:image" content="https://divesh-kumar-chordia.github.io/mario-portfolio/og.png" />
   <meta property="og:image:width" content="1200" />
@@ -56,8 +56,8 @@
         <a class="hud-link" href="#contact">CONTINUE</a>
       </nav>
       <div class="flex gap-2">
-        <button id="night" type="button" class="border-2 border-white px-2 py-2 hover:bg-white hover:text-ink" aria-pressed="false">NIGHT</button>
-        <button id="sound" type="button" class="border-2 border-white px-2 py-2 hover:bg-white hover:text-ink" aria-pressed="false">SOUND OFF</button>
+        <button id="night" type="button" class="flex items-center border-2 border-white px-2 py-2 hover:bg-white hover:text-ink" aria-pressed="false" aria-label="Night mode"><img data-icon src="assets/sprites/icon-moon.svg" alt="" class="h-4 w-4 sm:hidden" /><span data-label class="hidden sm:inline">NIGHT</span></button>
+        <button id="sound" type="button" class="flex items-center border-2 border-white px-2 py-2 hover:bg-white hover:text-ink" aria-pressed="false" aria-label="Sound"><img data-icon src="assets/sprites/icon-sound-off.svg" alt="" class="h-4 w-4 sm:hidden" /><span data-label class="hidden sm:inline">SOUND OFF</span></button>
       </div>
     </div>
     <nav aria-label="Sections" class="flex gap-5 overflow-x-auto px-4 py-3 xl:hidden" data-nav>
@@ -75,7 +75,7 @@
       <div class="stars absolute inset-0" aria-hidden="true"></div>
       <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[calc(var(--hud)+12px)] w-24 animate-drift [animation-delay:-30s] sm:w-36" />
 
-      <div class="relative mx-auto flex max-w-6xl flex-col items-center px-4 pt-12 text-center sm:pt-16">
+      <div class="relative mx-auto flex max-w-6xl flex-col items-center px-4 pt-8 text-center sm:pt-16">
         <h1 class="relative border-3 border-ink bg-brick px-5 pb-5 pt-4 shadow-px-lg sm:px-10 sm:pb-8 sm:pt-6" aria-label="Super Divesh Bros.">
           <span aria-hidden="true" class="absolute left-2 top-2 h-2 w-2 bg-ink"></span>
           <span aria-hidden="true" class="absolute right-2 top-2 h-2 w-2 bg-ink"></span>
@@ -87,13 +87,13 @@
         </h1>
         <p class="mt-4 font-pixel text-px-xs text-cream" style="text-shadow:2px 2px 0 #000">©2026 DIVESH KUMAR CHORDIA</p>
 
-        <p class="mt-8 max-w-xl font-pixel text-px-sm text-white sm:text-px-md" style="text-shadow:2px 2px 0 #000">DATA &amp; PLATFORM ENGINEER</p>
-        <p class="mt-4 max-w-xl text-[19px] font-medium leading-relaxed text-white" style="text-shadow:2px 2px 0 #000">Software engineer on Contentstack's data and analytics platform in Bengaluru. I build the systems that record, deliver and count what customers do.</p>
+        <p class="mt-6 max-w-xl font-pixel text-px-sm text-white sm:mt-8 sm:text-px-md" style="text-shadow:2px 2px 0 #000">SOFTWARE · DATA · AI ENGINEER</p>
+        <p class="mt-3 max-w-xl text-[17px] font-medium leading-relaxed text-white sm:mt-4 sm:text-[19px]" style="text-shadow:2px 2px 0 #000">Software engineer on Contentstack's data and analytics platform in Bengaluru. I build the systems that record, deliver and count what customers do.</p>
 
         <a href="#contact" class="mt-6 inline-flex items-center gap-3 border-3 border-ink bg-luigi px-3 py-2 font-pixel text-px-xs leading-5 text-white shadow-px hover:-translate-y-0.5">
-          <img src="assets/sprites/star.svg" alt="" class="h-4 w-4 animate-bob" />OPEN TO WORK · DATA &amp; PLATFORM ROLES · IMMEDIATE JOINER
+          <img src="assets/sprites/star.svg" alt="" class="h-4 w-4 animate-bob" />OPEN TO WORK · SDE · AI ENGINEER · DATA ENGINEER · IMMEDIATE JOINER
         </a>
-        <div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:gap-12">
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-4 sm:mt-8 sm:gap-12">
           <a href="#about" class="px-btn menu-opt bg-white" data-sfx="start">1 Player Start</a>
           <a href="#projects" class="px-btn menu-opt bg-coin" data-sfx="pipe">Project Select</a>
         </div>
@@ -104,28 +104,27 @@
       <!-- playfield: bugs crawl out of the pipe; stomp them -->
       <div id="field" tabindex="0" role="application" aria-roledescription="mini game"
            aria-label="Playfield. Arrow keys run, space jumps. Stomp the bugs crawling out of the pipe, and hit the question blocks from below for coins."
-           class="relative mt-6 h-[calc(var(--tile)*6)] outline-none [touch-action:manipulation]">
+           class="relative mt-6 h-[calc(var(--tile)*7)] cursor-pointer outline-none [touch-action:manipulation]">
         <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[18%] w-20 animate-drift sm:w-28" />
         <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[40%] w-16 animate-drift [animation-delay:-55s] sm:w-24" />
         <img src="assets/sprites/hill.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[2%] w-[calc(var(--tile)*5)]" />
         <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[22%] hidden w-[calc(var(--tile)*3)] sm:block" />
         <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 right-[22%] w-[calc(var(--tile)*2)] sm:w-[calc(var(--tile)*3)]" />
         <button type="button" id="p2" class="absolute bottom-0 left-[9%] z-10 h-[var(--tile)] w-[var(--tile)]" aria-label="Player 2"><img src="assets/sprites/hero2-idle.svg" alt="" class="sprite h-full w-full" /></button>
-        <div class="pipe absolute bottom-0 right-[6%] z-10 h-[calc(var(--tile)*2)]" data-solid data-spawn data-warp aria-hidden="true"></div>
+        <div class="pipe absolute bottom-0 right-[6%] z-10 h-[calc(var(--tile)*2)]" data-solid data-spawn data-warp title="Warp pipe: stand on it and press down, or tap it" aria-hidden="true"></div>
 
-        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*2.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% - var(--tile)*2.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
         <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
-        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="multi" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% - var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="multi" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
         <button type="button" class="tile-block" style="left:calc(50% + var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
-        <button type="button" class="tile-block" style="left:calc(50% + var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% + var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
 
         <div id="bugs"></div>
         <img id="ghost" src="assets/sprites/ghost.svg" alt="" aria-hidden="true" class="sprite absolute left-0 top-0 z-[15] hidden h-[var(--tile)] w-[var(--tile)]" />
         <img id="hero" src="assets/sprites/hero-idle.svg" alt="Divesh, pixel-art avatar" class="sprite absolute left-0 top-0 z-20 h-[var(--tile)] w-[var(--tile)] will-change-transform" />
 
-        <p id="play-hint" class="pointer-events-none absolute inset-x-4 top-2 z-20 text-center font-pixel text-px-xs leading-5 text-white" style="text-shadow:2px 2px 0 #000">
-          <span class="animate-blink">&gt;</span> <span class="[@media(pointer:coarse)]:hidden">CLICK HERE · ARROWS RUN · SPACE JUMPS · STOMP BUGS · DOWN ON THE PIPE WARPS</span><span class="hidden [@media(pointer:coarse)]:inline">TAP A BUG TO SQUASH IT · TAP THE PIPE TO WARP</span>
-        </p>
+        <div id="coach" class="coach" role="status" aria-live="polite"></div>
+        <div id="pointer" class="pointer-arrow hidden" aria-hidden="true"></div>
       </div>
 
       <div class="tile-ground relative h-[calc(var(--tile)*2)]">
@@ -158,7 +157,7 @@
               </div>
               <div>
                 <h3 class="font-pixel text-px-sm leading-relaxed text-coin sm:text-px-md">DIVESH KUMAR CHORDIA</h3>
-                <p class="mt-2 font-pixel text-px-xs leading-5 text-white/70">CLASS: DATA &amp; PLATFORM ENGINEER · SUBCLASS: AGENTIC</p>
+                <p class="mt-2 font-pixel text-px-xs leading-5 text-white/70">CLASS: SOFTWARE ENGINEER · SUBCLASS: DATA + AI</p>
                 <p class="mt-1 font-pixel text-px-xs leading-5 text-luigi">SIDEKICK: CLAUDE SKILLS + MCP</p>
               </div>
             </div>
@@ -166,7 +165,7 @@
               <p>I work on <strong class="font-semibold text-white">Contentstack</strong>'s data and analytics platform: the systems that record everything customers do, deliver those events to their own servers, and turn raw traffic into analytics they can act on.</p>
               <p>I built the Go audit-logging platform that stores billions of logs, work on the Spark pipelines and Analytics API behind 2B+ monthly API calls, and ship analytics features end to end across 8+ services, from metering instrumentation to React widgets to the automated checks that prove the numbers are right.</p>
               <p>On my own time I build tools around Contentstack, Redis-backed queues and RAG systems, and I work AI-first with Claude Skills and MCP.</p>
-              <p class="border-l-4 border-luigi pl-4 text-white">Open to Data Engineering and Platform Engineering roles. Immediate joiner.</p>
+              <p class="border-l-4 border-luigi pl-4 text-white">Open to Software Engineer (SDE), AI Engineer and Data Engineer roles. Immediate joiner.</p>
             </div>
             <p class="mt-6 border-t-2 border-dashed border-white/20 pt-4 font-pixel text-px-xs leading-6 text-white/60">SPEAKS: ENGLISH · HINDI · KANNADA</p>
           </article>
@@ -270,7 +269,7 @@
           <p class="absolute bottom-[calc(var(--tile)*2+16px)] left-[calc(16px+var(--tile)*2)] font-pixel text-px-xs text-white md:left-[calc(50%+var(--tile)*1.25)]" style="text-shadow:2px 2px 0 #000">START · 2020</p>
 
           <div id="goal" class="absolute bottom-0 right-4 flex items-end gap-[calc(var(--tile)*0.75)]">
-            <button type="button" id="flagpole" class="relative h-[calc(var(--tile)*5.5)] w-2 bg-luigi-dark" aria-label="Flagpole: replay the course clear">
+            <button type="button" id="flagpole" title="Click to replay the course clear" class="relative h-[calc(var(--tile)*5.5)] w-2 bg-luigi-dark" aria-label="Flagpole: replay the course clear">
               <span class="absolute -left-[5px] -top-4 h-[18px] w-[18px] rounded-full border-2 border-ink bg-luigi" aria-hidden="true"></span>
               <span class="flag" aria-hidden="true"></span>
             </button>
@@ -298,7 +297,7 @@
 
         <div class="px-panel mt-6 p-6 sm:p-8">
           <p class="min-h-[4.5em] font-pixel text-px-xs leading-6 sm:text-px-sm sm:leading-7" id="dialog"
-             data-text="THANK YOU FOR PLAYING! DIVESH IS OPEN TO DATA AND PLATFORM ENGINEERING ROLES AND CAN JOIN IMMEDIATELY. LEAVE A MESSAGE AND HEAR BACK SOON.">THANK YOU FOR PLAYING! DIVESH IS OPEN TO DATA AND PLATFORM ENGINEERING ROLES AND CAN JOIN IMMEDIATELY. LEAVE A MESSAGE AND HEAR BACK SOON.</p>
+             data-text="THANK YOU FOR PLAYING! DIVESH IS OPEN TO SDE, AI ENGINEER AND DATA ENGINEER ROLES AND CAN JOIN IMMEDIATELY. LEAVE A MESSAGE AND HEAR BACK SOON.">THANK YOU FOR PLAYING! DIVESH IS OPEN TO SDE, AI ENGINEER AND DATA ENGINEER ROLES AND CAN JOIN IMMEDIATELY. LEAVE A MESSAGE AND HEAR BACK SOON.</p>
 
           <form id="contact-form" class="mt-8 grid gap-5" novalidate>
             <div class="grid gap-5 sm:grid-cols-2">
@@ -347,8 +346,8 @@
         <div>
           <p class="font-pixel text-px-xs text-coin">THE 30-SECOND VERSION</p>
           <h2 id="brief-title" class="mt-3 font-pixel text-px-sm leading-6 sm:text-px-md">DIVESH KUMAR CHORDIA</h2>
-          <p class="mt-1 text-white/75">Software Engineer, Data &amp; Platform · Contentstack, Bengaluru · Since Jan 2024</p>
-          <p class="mt-3 inline-block border-2 border-luigi px-2 py-1 font-pixel text-px-xs text-luigi">OPEN TO WORK · IMMEDIATE JOINER</p>
+          <p class="mt-1 text-white/75">Software Engineer · Contentstack, Bengaluru · Since Jan 2024</p>
+          <p class="mt-3 inline-block border-2 border-luigi px-2 py-1 font-pixel text-px-xs text-luigi">OPEN TO SDE · AI ENGINEER · DATA ENGINEER ROLES · IMMEDIATE JOINER</p>
         </div>
         <form method="dialog"><button class="border-2 border-white px-2 py-2 font-pixel text-px-xs hover:bg-white hover:text-ink" aria-label="Close">CLOSE</button></form>
       </div>
@@ -368,6 +367,24 @@
         <a class="px-btn bg-white py-3 text-px-xs" href="https://github.com/Divesh-Kumar-Chordia" target="_blank" rel="noopener">GitHub</a>
         <a class="px-btn bg-white py-3 text-px-xs" href="mailto:diveshkumarchordia@gmail.com">Email</a>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="map" aria-labelledby="map-title" class="m-auto w-[min(920px,calc(100%-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto bg-transparent p-0 backdrop:bg-ink/70">
+    <div class="border-3 border-ink bg-cream p-5 shadow-px-lg sm:p-7">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="font-pixel text-px-xs text-brick">SYSTEM MAP</p>
+          <h2 id="map-title" class="mt-2 font-pixel text-px-sm leading-6 sm:text-px-md"></h2>
+        </div>
+        <form method="dialog"><button class="border-2 border-ink bg-white px-2 py-2 font-pixel text-px-xs hover:bg-ink hover:text-white">CLOSE</button></form>
+      </div>
+      <p id="map-why" class="mt-3 max-w-3xl font-medium"></p>
+      <div class="mt-5 overflow-x-auto border-3 border-ink bg-white p-3">
+        <div id="map-svg" class="min-w-[720px]"></div>
+      </div>
+      <p class="mt-3 font-pixel text-px-xs text-ink/60 sm:hidden">SWIPE THE MAP SIDEWAYS TO SEE IT ALL</p>
+      <ul id="map-legend" class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[14px] text-ink/70"></ul>
     </div>
   </dialog>
 
