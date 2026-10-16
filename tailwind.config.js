@@ -5,7 +5,7 @@ module.exports = {
     screens: { sm: "640px", md: "768px", lg: "1024px", xl: "1200px" },
     extend: {
       colors: {
-        sky: "#5C94FC",
+        sky: "rgb(var(--sky) / <alpha-value>)",
         mario: { DEFAULT: "#E52521", dark: "#9C1A17" },
         luigi: { DEFAULT: "#00B259", dark: "#006A2E" },
         brick: { DEFAULT: "#B84418", light: "#F8A878" },
@@ -44,6 +44,8 @@ module.exports = {
         drift: { from: { transform: "translateX(-20vw)" }, to: { transform: "translateX(120vw)" } },
         blink: { "50%": { opacity: "0" } },
         rainbow: { to: { filter: "hue-rotate(360deg)" } },
+        burst: { "0%": { transform: "translate(0,0)", opacity: "1" }, "100%": { transform: "translate(var(--dx), var(--dy))", opacity: "0" } },
+        hurt: { "50%": { opacity: "0" } },
       },
       animation: {
         bump: "bump 220ms steps(4) 1",
@@ -53,6 +55,8 @@ module.exports = {
         drift: "drift 90s linear infinite",
         blink: "blink 1s steps(1) infinite",
         rainbow: "rainbow 600ms linear infinite",
+        burst: "burst 900ms steps(9) forwards",
+        hurt: "hurt 120ms steps(1) 8",
       },
     },
   },

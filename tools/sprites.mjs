@@ -13,7 +13,8 @@ const PAL = {
   Y: "#f8b800", y: "#fce4a0", o: "#b06a00",
   G: "#00b259", g: "#006a2e", l: "#8ee68e",
   N: "#b84418", p: "#f8a878", c: "#fce4b0",
-  L: "#a8d8f8", U: "#3c64d8",
+  L: "#a8d8f8", U: "#3c64d8", u: "#1c3c9c", v: "#8cacff",
+  P: "#f878c8", q: "#b83c8c", e: "#f0d0b0",
 };
 
 function svg(map, name) {
@@ -246,5 +247,172 @@ svg([
   "........gGG.GG..",
   ".......gG.......",
 ], "vine");
+
+
+
+/* ---------- bug enemy (stompable) ---------- */
+const BUG_TOP = [
+  "....K......K....",
+  ".....K....K.....",
+  "......GGGG......",
+  "....GGGGGGGG....",
+  "...GGWWGGWWGG...",
+  "..GGGWKGGWKGGG..",
+  "..GGGGGGGGGGGG..",
+  ".gGgGgGgGgGgGgG.",
+  ".GgGgGgGgGgGgGg.",
+  ".gGGGGGGGGGGGGg.",
+  "..gggggggggggg..",
+];
+svg([...BUG_TOP, "...K.K....K.K...", "..K..K....K..K..", ".K...K....K...K."], "bug-1");
+svg([...BUG_TOP, "...K.K....K.K...", "...K.K....K.K...", "....K.K..K.K...."], "bug-2");
+svg([
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "..GGGGGGGGGGGG..",
+  ".GGKWKGGGGKWKGG.",
+  ".gGgGgGgGgGgGgG.",
+  "gggggggggggggggg",
+  ".K.K..K..K..K.K.",
+  "................",
+], "bug-flat");
+
+/* ---------- underground brick ---------- */
+svg(grid(16, 16, (x, y) => {
+  if (y % 4 === 3) return "K";
+  const band = Math.floor(y / 4) % 2;
+  if ((band === 0 && x === 7) || (band === 1 && x === 15)) return "K";
+  return y % 4 === 0 ? "v" : "U";
+}), "brick-blue");
+
+/* ---------- castle (end of level) ---------- */
+svg(grid(80, 80, (x, y) => {
+  const brick = () => {
+    if (y % 8 === 7) return "K";
+    if ((x + (Math.floor(y / 8) % 2) * 8) % 16 === 15) return "K";
+    return y % 8 === 0 ? "p" : "N";
+  };
+  const doorTop = 54, inDoor = x >= 32 && x < 48 && y >= doorTop && !(y < doorTop + 4 && (x < 34 || x > 45)) && !(y < doorTop + 2 && (x < 36 || x > 43));
+  if (y >= 40) return inDoor ? "K" : brick();
+  if (y >= 32) return Math.floor(x / 8) % 2 === 0 ? brick() : null;            // lower battlements
+  if (x >= 20 && x < 60 && y >= 16) {                                         // tower
+    if ((x >= 26 && x < 32 || x >= 48 && x < 54) && y >= 22 && y < 32) return "K";
+    return brick();
+  }
+  if (x >= 20 && x < 60 && y >= 8) return Math.floor((x - 20) / 8) % 2 === 0 ? brick() : null;
+  return null;
+}), "castle");
+
+
+/* ---------- player 2: green-capped brother (palette swap) ---------- */
+Object.entries(hero).forEach(([n, m]) => svg(m.map((r) => r.replace(/R/g, "G").replace(/r/g, "g")), n.replace("hero", "hero2")));
+
+/* ---------- legacy-code turtle (faces left) ---------- */
+const TURTLE_TOP = [
+  ".eee............",
+  "eKeee...........",
+  "eeeee...gggg....",
+  ".eee...gGGGGg...",
+  "..ee..gGlGGgGg..",
+  "..ee.gGGgGGgGGg.",
+  "...egGgGGgGGgGg.",
+  "...egGGgGGgGGgg.",
+  "...WWWWWWWWWWWW.",
+];
+svg([...TURTLE_TOP, "...eeee...eeee..", "..YYYY...YYYY..."], "turtle-1");
+svg([...TURTLE_TOP, "....eeee.eeee...", "...YYYY.YYYY...."], "turtle-2");
+svg([
+  "................",
+  "................",
+  "................",
+  "................",
+  "......gggg......",
+  ".....gGGGGg.....",
+  "....gGlGGgGg....",
+  "...gGGgGGgGGg...",
+  "...gGgGGgGGgg...",
+  "...WWWWWWWWWW...",
+  "....WWWWWWWW....",
+], "shell");
+
+/* ---------- shy ghost (night only) ---------- */
+const GHOST_TOP = [
+  ".....KKKKKK.....",
+  "...KKWWWWWWKK...",
+  "..KWWWWWWWWWWK..",
+  ".KWWWWWWWWWWWWK.",
+];
+const GHOST_BOTTOM = [
+  "KWWWWWWWWWWWWWWK",
+  ".KWWWWWWWWWWWWK.",
+  ".KWWWWWWWWWWWWK.",
+  "..KWWWKWWKWWWK..",
+  "...KKK.KK.KKK...",
+];
+svg([...GHOST_TOP,
+  ".KWWKKWWWWKKWWK.",
+  "KWWWKKWWWWKKWWWK",
+  "KWWWWWWWWWWWWWWK",
+  "KWWKKKKKKKKKKWWK",
+  "KWWKRRRRRRRRKWWK",
+  "KWWWKKKKKKKKWWWK",
+  ...GHOST_BOTTOM], "ghost");
+svg([...GHOST_TOP,
+  ".KWWWWWWWWWWWWK.",
+  "KWWKKKWWWWKKKWWK",
+  "KWRRWWWWWWWWRRWK",
+  "KWWWWWKKKKWWWWWK",
+  "KWWWWWWWWWWWWWWK",
+  "KWWWWWWWWWWWWWWK",
+  ...GHOST_BOTTOM], "ghost-shy");
+
+/* ---------- dino sidekick (faces right) ---------- */
+svg([
+  "........GGGG....",
+  ".......GGGGGG...",
+  "......GGWWKGGG..",
+  "......GGWWKGGGGG",
+  "......GGGGGGGGGG",
+  ".......GGGGGGGG.",
+  ".RR...GGGGW.....",
+  "RRRRGGGGWWW.....",
+  "RRRGGGGGWWWW....",
+  ".GGGGGGGWWWW....",
+  "GGGGGGGGGWWW....",
+  ".GGGGGGGGGG.....",
+  "..GGGG..GGG.....",
+  "..oooo..ooo.....",
+  ".ooooo.oooo.....",
+], "dino");
+
+/* ---------- princess (appears at the castle) ---------- */
+svg([
+  ".....Y.Y.Y......",
+  ".....YYYYY......",
+  "....oooooooo....",
+  "...ooeeeeeeoo...",
+  "...oeKeeeeKeo...",
+  "...oeeeeeeeeo...",
+  "...ooeeeReeoo...",
+  "...oo.eeee.oo...",
+  "...ooPPPPPPoo...",
+  "..ooPPPWWPPPoo..",
+  "..ePPPPPPPPPPe..",
+  "..ePPqPPPPqPPe..",
+  "...PPPPPPPPPP...",
+  "..PPPPPPPPPPPP..",
+  "..PqPPPPPPPPqP..",
+  ".PPPPPPPPPPPPPP.",
+  ".qPPPPPPPPPPPPq.",
+  "PPPPPPPPPPPPPPPP",
+  "qqqqqqqqqqqqqqqq",
+  "....KK....KK....",
+], "princess");
 
 console.log("sprites written to assets/sprites/");
