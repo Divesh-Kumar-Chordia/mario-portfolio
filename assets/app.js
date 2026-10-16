@@ -19,10 +19,10 @@
 
   /* ================= content ================= */
   const SKILLS = [
-    { item: "SUPER MUSHROOM", sprite: "mushroom", kind: "Backend", skills: ["Go", "TypeScript", "JavaScript", "Python", "SQL", "NestJS", "Node.js", "Express", "gRPC", "Protobuf", "REST / OpenAPI", "System design"] },
-    { item: "1-UP MUSHROOM", sprite: "oneup", kind: "Data", skills: ["Elasticsearch", "MongoDB", "Apache Spark", "Kafka", "AWS Athena", "Redis", "ILM tiers"] },
+    { item: "SUPER MUSHROOM", sprite: "mushroom", kind: "Backend", skills: ["Go", "TypeScript", "JavaScript", "Python", "SQL", "NestJS", "Node.js", "Express", "FastAPI", "gRPC", "Protobuf", "REST / OpenAPI", "System design"] },
+    { item: "1-UP MUSHROOM", sprite: "oneup", kind: "Data", skills: ["Elasticsearch", "MongoDB", "Apache Spark", "Kafka", "AWS Athena", "Redis", "Redis Lua", "ILM tiers"] },
     { item: "STARMAN", sprite: "star", kind: "Platform", skills: ["Docker", "Kubernetes", "GoCD", "AWS", "GCP", "Azure", "Snyk", "Trivy", "Git"] },
-    { item: "COIN", sprite: "coin", kind: "Frontend & testing", skills: ["React", "Redux", "Highcharts", "Webpack", "Vite", "Storybook", "Playwright"] },
+    { item: "COIN", sprite: "coin", kind: "Frontend & testing", skills: ["React", "Redux", "Highcharts", "Highstock", "Webpack", "Vite", "Storybook", "Playwright"] },
     { item: "FIRE FLOWER", sprite: "fireflower", kind: "GenAI & RAG", skills: ["LangChain", "LangGraph", "LlamaIndex", "Advanced RAG", "Self-RAG", "Agents", "Tool calling", "Guardrails", "LLM APIs", "vLLM", "Ollama"] },
     { item: "? BLOCK", sprite: "qblock", kind: "AI-first workflow", skills: ["Claude Skills", "MCP", "Cursor", "Agent Mode", "Rules & hooks"] },
   ];
@@ -32,7 +32,7 @@
     { quest: "main", title: "AUDIT LOGGING PLATFORM", stat: "BILLIONS OF LOGS · 6 PRODUCTS",
       why: "Customers need a searchable record of every audit, webhook and publish event across Contentstack. That is billions of logs, and keeping them can't cost a fortune.",
       flow: ["PRODUCTS", "KAFKA", "LOGS CONSUMER", "ES · MONTHLY INDEX", "LOGS SERVICE · GRPC", "CUSTOMER QUERY"],
-      built: "I built the Go services behind it. Logs Consumer moves events from Kafka into Elasticsearch and creates a fresh index every month. Logs Service answers queries over gRPC through an index alias, translating Mongo-style queries into Elasticsearch ones. Go worker pools with mutex-guarded shared state let both scale on very little hardware, and an ILM policy ages data from hot to warm to cold. I added multi-topic Kafka support, $exists in the translator, and a direct Elasticsearch path for queries the translator can't express.",
+      built: "I built the Go services behind it. Logs Consumer moves events from Kafka into Elasticsearch and creates a fresh index every month. Logs Service answers queries over gRPC through an index alias, translating Mongo-style queries into Elasticsearch ones. Go worker pools with mutex-guarded shared state let both scale on very little hardware, and an ILM policy ages data from hot to warm to cold. I added multi-topic Kafka support, $exists in the translator, and a direct Elasticsearch path for queries the translator can't express. I onboarded 6 products end to end: ingestion, Elasticsearch index templates and the admin filter UI.",
       tags: ["Go", "Kafka", "Elasticsearch", "gRPC"] },
     { quest: "main", title: "WEBHOOK DELIVERY", stat: "75+ NEW TRIGGER COMBINATIONS",
       why: "Customers plug Contentstack into their own systems. When content changes, their endpoint has to hear about it, even when their server is having a bad day.",
@@ -50,27 +50,41 @@
       flow: ["LEGACY MONGO", "INDEXED DAILY SCAN", "COUNTS", "DASHBOARDS", "EVALUATOR"],
       built: "A low-cost daily scan that runs on Mongo indexes instead of joins. It powers Content Life Cycle, Workflow Health and Team Adoption. To prove the numbers, I built an Evaluator: it seeds realistic data, reads the dashboards through Playwright (DOM and screenshots) and compares every count with what the product rules say it should be. The analytics are validated against 67 operation-sequence cases, including orphaned-record edge cases.",
       tags: ["MongoDB", "Elasticsearch", "Playwright"] },
-    { quest: "main", title: "FEATURE ADOPTION", stat: "4 SOURCES, 1 VIEW",
-      why: "Customers couldn't easily see what they had bought and use, bought but haven't touched lately, or haven't bought yet.",
-      flow: ["4 DATA SOURCES", "TEMPLATE SERVICE", "NPM + MICRO-FRONTEND", "USAGE VIEW"],
-      built: "I owned a template-driven NestJS service end to end. It pulls business logic from audit trails, metered events, clustered MongoDB and analytics into one picture of each customer's recent activity. I fixed under-reporting for sharded orgs and shipped it as an npm package plus a micro-frontend.",
-      tags: ["NestJS", "TypeScript", "MongoDB"] },
-    { quest: "side", title: "RAG SYSTEMS", stat: "SELF-CORRECTING RETRIEVAL",
-      why: "LLMs hallucinate when retrieval is weak. I wanted to understand retrieval from the bottom up, not just call a framework.",
-      flow: ["INGEST", "CHUNK", "EMBED", "VECTOR DB", "MULTI-QUERY", "RE-RANK", "LLM", "SELF-RAG CHECK"],
-      built: "A production-style RAG pipeline with LangChain and ChromaDB / Pinecone, plus a low-level framework for testing chunking, embeddings and search. It layers multi-query translation, RAG-Fusion, cross-encoder re-ranking, and Self-RAG loops that catch low-confidence answers.",
-      tags: ["Python", "LangChain", "ChromaDB", "Pinecone"] },
+    { quest: "main", title: "PLATFORM DISCOVERY", stat: "17 CAPABILITIES · 3 PRODUCTION APPS",
+      why: "Customers couldn't easily see what they had bought and use, bought but haven't touched lately, or haven't bought yet. The answer was scattered across many systems.",
+      flow: ["ES + MONGO + AUDIT + METERING", "9 USAGE PROCESSORS", "17 CAPABILITIES", "REACT PACKAGE", "3 APPS"],
+      built: "I owned it end to end across 8 repositories: a template-driven service that resolves 17 capabilities through 9 usage processors over Elasticsearch, MongoDB, audit logs and metering. Multi-cluster resolution fixed under-reporting for sharded organizations. I extracted the UI into @contentstack/platform-discovery, a versioned React package shipped in 9 releases and used by 3 production applications.",
+      tags: ["NestJS", "React", "Elasticsearch", "MongoDB"] },
+  ];
+
+  const SIDE_QUESTS = [
+    { title: "JEVSTREAM", sprite: "star",
+      body: "Priority-based ticket routing. A FastAPI service judges each ticket's urgency and stores it in a Redis sorted set; workers claim the most urgent first through atomic Lua scripts with expiring leases, so a crashed worker's ticket goes back in the queue.",
+      tags: ["Python", "FastAPI", "Redis", "Lua"], code: "https://github.com/Divesh-Kumar-Chordia/jevstream" },
+    { title: "ANALYTICS AUTOMATION LAB", sprite: "oneup",
+      body: "A testing lab for Contentstack analytics: a Delivery API site, 29 automation scripts covering the content lifecycle, multi-user simulation, every analytics meter dimension, and Launch URL warming.",
+      tags: ["React", "Vite", "Node.js"], live: "https://top-url-website-making.vercel.app", code: "https://github.com/DiveshKumarChordia/contentstack-analytics-automation-lab" },
+    { title: "LUMEN VISUAL EXPERIENCE", sprite: "fireflower",
+      body: "A Contentstack Visual Builder site where a script creates the stack, environment, tokens, content types and entries in ten idempotent steps. Live Preview covers drafts, Releases and Timeline.",
+      tags: ["TypeScript", "Live Preview", "GraphQL"], live: "https://lumen-rbac-demo.vercel.app", code: "https://github.com/DiveshKumarChordia/lumen-visual-experience" },
+    { title: "GITPULSE", sprite: "coin",
+      body: "A GitHub organization dashboard: every commit and pull request on one timeline, a contribution heatmap, filters, and code search across all of an org's repositories.",
+      tags: ["JavaScript", "GitHub API", "OAuth"], live: "https://gitpulse-dashboard.vercel.app", code: "https://github.com/DiveshKumarChordia/gitpulse-dashboard" },
+    { title: "RAG SYSTEMS", sprite: "mushroom",
+      body: "A production-style RAG pipeline with LangChain and ChromaDB / Pinecone, plus a low-level lab for chunking, embeddings, RAG-Fusion, cross-encoder re-ranking and Self-RAG loops that catch low-confidence answers.",
+      tags: ["Python", "LangChain", "Pinecone"] },
   ];
 
   const TIMELINE = [
     { status: "now", role: "SOFTWARE ENGINEER", org: "Contentstack · Bengaluru", when: "Aug 2024 – Present",
       lead: "Data and analytics platform. The flagship systems are in Project Select above; this is the rest of the job.",
       points: [
+        "Authored 500+ merged pull requests and reviewed 515 across 35 repositories.",
         "Primary contact for production RCAs on the audit logging platform I built.",
         "Manage releases and triage customer issues.",
         "Wrote dev-environment scripts that simulate real customer usage patterns and generate the cases needed to cover every product capability.",
         "Principal author of cs-highcharts, the shared charting library. A log10-based tick-interval algorithm fixed a recurring axis-label bug across every chart.",
-        "Shipped two more analytics dashboards end to end.",
+        "Delivered 3 CMS analytics dashboards end to end: metering instrumentation, Spark rollups, Elasticsearch snapshots, serving processors, React widgets and plan gating.",
         "Built a paginated Athena export for 10,000+ records, with a precheck that surfaces row-limit failures before a job runs.",
         "Led a security sweep across 10 services: Node.js 24, Go 1.24, non-root images, zlib/OpenSSL CVE fixes, Snyk and Trivy in the dev loop.",
         "Use Claude Skills and MCP in my daily workflow; lately they help me build Node.js backends much faster.",
@@ -319,6 +333,18 @@
     bumpEl(card); popCoin(card.firstElementChild); sfx.coin(); addCoin(); addScore(200);
     const r = card.getBoundingClientRect(); popScore("200", r.left + r.width / 2 - 12, r.top - 24);
   }));
+
+  const sideLink = (href, label, cls) => href ? `<a class="px-btn ${cls} px-3 py-2 text-px-xs" href="${href}" target="_blank" rel="noopener">${label}</a>` : "";
+  $("#side-quests").innerHTML = SIDE_QUESTS.map((q) => `
+    <article class="px-card flex flex-col p-6">
+      <div class="flex items-center gap-3">
+        <img src="${SPR(q.sprite)}" alt="" class="sprite h-8 ${q.sprite === "coin" ? "w-5" : "w-8"}" />
+        <h4 class="font-pixel text-px-xs leading-5 sm:text-px-sm sm:leading-6">${q.title}</h4>
+      </div>
+      <p class="mt-4 flex-1 text-ink/80">${esc(q.body)}</p>
+      <ul class="mt-5 flex flex-wrap gap-2">${q.tags.map((t) => `<li class="px-tag bg-luigi text-white">${esc(t)}</li>`).join("")}</ul>
+      ${q.live || q.code ? `<div class="mt-5 flex flex-wrap gap-3">${sideLink(q.live, "Play live", "bg-coin")}${sideLink(q.code, "Code", "bg-white")}</div>` : `<p class="mt-5 font-pixel text-px-xs text-ink/50">PRIVATE SAVE FILE</p>`}
+    </article>`).join("");
 
   /* ================= progress: vine + course clear ================= */
   $("#timeline").innerHTML = TIMELINE.map((t, i) => `
