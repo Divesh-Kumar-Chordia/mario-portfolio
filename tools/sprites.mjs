@@ -422,4 +422,24 @@ svg(["Y..Y..Y.", ".Y.Y.Y..", "..YYY...", "YYYYYYY.", "..YYY...", ".Y.Y.Y..", "Y.
 svg(["...W....", "..WW.W..", "WWWW..W.", "WWWW..W.", "WWWW..W.", "..WW.W..", "...W....", "........"], "icon-sound-on");
 svg(["...W....", "..WW....", "WWWW.W.W", "WWWW..W.", "WWWW.W.W", "..WW....", "...W....", "........"], "icon-sound-off");
 
+
+/* ---------- boss: PROD INCIDENT (an angry red bug with horns) ---------- */
+const BOSS_TOP = [
+  "..Y..........Y..",
+  "...Y........Y...",
+  "....RRRRRRRR....",
+  "...RRRRRRRRRR...",
+  "..RRKWWRRWWKRR..",
+  "..RRRKWRRWKRRR..",
+  "..RRRRRRRRRRRR..",
+  ".rRrRKKKKKKrRrR.",
+  ".RrRrRWRRWRrRrRr",
+  ".rRRRRRRRRRRRRr.",
+  "..rrrrrrrrrrrr..",
+];
+svg([...BOSS_TOP, "...K.K....K.K...", "..K..K....K..K..", ".K...K....K...K."], "boss-1");
+svg([...BOSS_TOP, "...K.K....K.K...", "...K.K....K.K...", "....K.K..K.K...."], "boss-2");
+svg(["................", "................", "................", "................", "................", "................", "................", "................",
+  "..Y.RRRRRRRR.Y..", ".RRKWKRRRRKWKRR.", ".rRrRrRrRrRrRrR.", "rrrrrrrrrrrrrrrr", ".K.K..K..K..K.K.", "................"], "boss-flat");
+
 console.log("sprites written to assets/sprites/");

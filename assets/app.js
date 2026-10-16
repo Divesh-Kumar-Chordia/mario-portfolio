@@ -357,9 +357,10 @@
   }
   function bumpEl(el) { el.classList.remove("is-bumped"); void el.offsetWidth; el.classList.add("is-bumped"); }
   function hop(el, img, base) {
-    img.src = SPR(`${base}-jump`);
-    el.animate([{ transform: "translateY(0)" }, { transform: "translateY(-60%)" }, { transform: "translateY(0)" }], { duration: 420, easing: "steps(7)" })
-      .finished.then(() => { img.src = SPR(`${base}-idle`); });
+    const swap = base.startsWith("hero");
+    if (swap) img.src = SPR(`${base}-jump`);
+    el.animate([{ translate: "0 0" }, { translate: "0 -60%" }, { translate: "0 0" }], { duration: 420, easing: "steps(7)" })
+      .finished.then(() => { if (swap) img.src = SPR(`${base}-idle`); });
   }
   function fireworks(n = 5) {
     if (reducedMotion) return;
@@ -556,135 +557,288 @@
   growVine();
 
   const goal = $("#goal");
+  let goalDone = false, everPlayed = false;
   function courseClear() {
+    goalDone = true;
     goal.classList.remove("is-clear"); void goal.offsetWidth; goal.classList.add("is-clear");
     sfx.flag(); addScore(5000);
     const d = reducedMotion ? 0 : 1400;
     setTimeout(() => { toast("COURSE CLEAR! +5000"); fireworks(5); }, d);
     setTimeout(() => toast("THANK YOU! BUT YOUR NEXT ENGINEER IS IN THIS CASTLE.", 3600), d + 2600);
   }
-  once(goal, courseClear, 0.9);
-  $("#flagpole").addEventListener("click", courseClear);
+  once(goal, () => { if (!everPlayed && !goalDone) courseClear(); }, 0.9); // scroll-only visitors still get the ending
+  $("#flagpole").addEventListener("click", (e) => { e.stopPropagation(); courseClear(); });
 
-  /* ================= playfield: hero, blocks, enemies, friends ================= */
-  const field = $("#field"), hero = $("#hero"), enemyLayer = $("#bugs"), ghost = $("#ghost");
-  const blocks = $$("[data-block]", field).map((el) => ({ el, kind: el.dataset.block, hits: el.dataset.block === "multi" ? 8 : 1 }));
-
-  function hitBlock(b) {
-    bumpEl(b.el);
-    if (b.kind === "brick" || b.hits <= 0) { sfx.bump(); return; }
-    b.hits--; popCoin(b.el); sfx.coin(); addCoin(); addScore(200); coachAt(3);
-    const r = b.el.getBoundingClientRect(); popScore("200", r.left + r.width / 4, r.top - 20);
-    if (b.hits === 0) setTimeout(() => { $("img", b.el).src = SPR("qblock-used"); b.el.setAttribute("aria-label", "Empty block"); }, 120);
-  }
-  blocks.forEach((b) => b.el.addEventListener("click", (e) => { e.stopPropagation(); hitBlock(b); }));
-
-  // Player 2 cheers you on
-  const p2 = $("#p2"), p2img = $("img", p2);
-  const P2_LINES = ["PLAYER 2: RACE YOU TO THE FLAG!", "PLAYER 2: I'VE GOT THE ON-CALL PAGER.", "PLAYER 2: SHIP IT!", "PLAYER 2: MIND THE LEGACY TURTLES."];
-  let p2Line = 0;
-  p2.addEventListener("click", (e) => { e.stopPropagation(); hop(p2, p2img, "hero2"); sfx.jump(); toast(P2_LINES[p2Line++ % P2_LINES.length]); });
-  if (!reducedMotion) setInterval(() => { if (fieldVisible && !document.hidden) hop(p2, p2img, "hero2"); }, 5200);
-
-  // physics in tile units, so the game plays the same at 32px and 48px tiles; y grows upward from the ground
-  const P = { x: 0, y: 0, vx: 0, vy: 0, w: 0.8, h: 1, ground: true, face: 1, hurt: 0 };
-  const G = { x: 1, y: 4, shy: false, t: 0 };
-  const keys = { left: false, right: false, jump: false, down: false };
-  let warping = 0;
-  let T = 48, W = 0, H = 0, rects = [], spawnX = 0, lastJump = false, walkT = 0;
-  let enemies = [], nextEnemy = 1.5, fixed = 0, fieldVisible = true;
+  /* =================================================================
+     THE GAME: every section is a stage. One hero travels between them
+     through pipes, and follows you when you scroll.
+     ================================================================= */
+  const TOUCH = matchMedia("(pointer: coarse)").matches;
+  const kbd = (k) => `<kbd>${k}</kbd>`;
+  const hero = $("#hero"), ghost = $("#ghost");
+  const coach = $("#coach"), pointer = $("#pointer");
+  const follower = Object.assign(document.createElement("img"), { src: SPR("dino"), alt: "" });
+  follower.className = "sprite absolute left-0 top-0 z-[19] hidden h-[var(--tile)] w-[var(--tile)]";
+  const padEl = $("#pad");
 
   const ENEMY = {
     bug: { frames: ["bug-1", "bug-2"], flat: "bug-flat", aspect: 14 / 16, speed: 1.6, points: 100, label: "BUG FIXED" },
     turtle: { frames: ["turtle-1", "turtle-2"], flat: "shell", aspect: 11 / 16, speed: 1.0, points: 200, label: "REFACTORED" },
   };
+  const pipeHint = (n) => TOUCH ? `TAP THE PIPE TO GO TO WORLD ${n}` : `STAND ON THE PIPE + ${kbd("↓")}<br>TO WARP TO WORLD ${n}`;
+
+  // per-stage scripts: each step shows until its condition is met
+  const SCRIPTS = {
+    "1-1": (st) => [
+      { text: TOUCH ? "TAP ME TO PLAY!" : "CLICK ME TO PLAY!", until: () => G.started },
+      { text: TOUCH ? "TAP WHERE TO RUN.<br>TAP HIGH TO JUMP." : `${kbd("←")}${kbd("→")} RUN · ${kbd("SPACE")} JUMP<br>OR JUST CLICK WHERE TO GO`, until: () => V.moved, after: 6 },
+      { text: "JUMP INTO A ? BLOCK<br>FROM BELOW", target: () => st.blocks.find((b) => b.kind !== "brick" && b.hits > 0)?.el, until: () => V.blockCoins > 0 },
+      { text: "BUGS! STOMP ONE<br>FROM ABOVE", target: () => V.enemies.find((en) => !en.flat)?.el, until: () => V.stomps > 0 },
+      { text: pipeHint(st.nextName), target: () => st.out },
+    ],
+    "1-2": (st) => [
+      { text: "WORLD 1-2 · NIGHT<br>A DINO IS WAITING. WALK INTO IT!", target: () => $("[data-npc=dino]", st.el), until: () => G.dino },
+      { text: `DINO JOINED! DOUBLE JUMP UNLOCKED.<br>${pipeHint(st.nextName)}`, target: () => st.out },
+    ],
+    "1-3": (st) => [
+      { text: "WORLD 1-3 · UNDERGROUND<br>GRAB EVERY COIN!", target: () => st.coins.find((c) => !c.got)?.el, until: () => st.coins.every((c) => c.got) },
+      { text: `ALL COINS! ${pipeHint(st.nextName)}`, target: () => st.out },
+    ],
+    "1-4": (st) => [
+      { text: "WORLD 1-4 · BOSS FIGHT<br>A PROD INCIDENT! STOMP IT 3 TIMES", target: () => V.boss?.el, until: () => G.bossDown },
+      { text: `INCIDENT RESOLVED!<br>${pipeHint(st.nextName)}`, target: () => st.out },
+    ],
+    "1-5": (st) => [
+      { text: "WORLD 1-5 · THE GOAL<br>RUN TO THE FLAGPOLE!", target: () => $("#flagpole"), until: () => goalDone },
+      { text: "ENTER THE CASTLE!", target: () => $("[data-door]", st.el) },
+    ],
+    "8-4": (st) => [
+      { text: "WORLD 8-4 · MUSHROOM HOUSE<br>SAY HI TO THE HOST", target: () => $("[data-npc=host]", st.el), until: () => V.host },
+      { text: "THE END. THANKS FOR PLAYING!<br>LEAVE A MESSAGE BELOW", ttl: 6 },
+    ],
+  };
+
+  // global progress (G) and per-visit state (V)
+  const G = { started: false, dino: false, bossDown: false };
+  let V = {};
+  const P = { x: 0, y: 0, vx: 0, vy: 0, w: 0.8, h: 1, ground: true, face: 1, hurt: 0, jumps: 0 };
+  const keys = { left: false, right: false, jump: false, down: false };
+  let T = 48, W = 0, H = 0, rects = [], lastJump = false, walkT = 0, warping = 0, emerging = 0;
+  let target = null, tapJump = 0, fixed = 0, active = null, trail = [];
+
+  const stages = $$("[data-stage]").map((el, i, all) => ({
+    el, name: el.dataset.stage, index: i,
+    kinds: (el.dataset.enemies || "").split(",").filter(Boolean),
+    blocks: $$("[data-block]", el).map((b) => ({ el: b, kind: b.dataset.block, hits: b.dataset.block === "multi" ? 8 : 1 })),
+    coins: $$("[data-coin]", el).map((c) => ({ el: c, got: false })),
+    out: $("[data-pipe=out]", el), in: $("[data-pipe=in]", el),
+    layer: Object.assign(document.createElement("div"), { className: "contents" }),
+  }));
+  stages.forEach((st, i) => { st.next = stages[i + 1]; st.nextName = st.next?.name; st.el.append(st.layer); });
 
   function measure() {
-    const fr = field.getBoundingClientRect();
+    if (!active) return;
+    const fr = active.el.getBoundingClientRect();
     T = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tile")) || 48;
     W = fr.width / T; H = fr.height / T;
-    rects = [...blocks.map((b) => b.el), ...$$("[data-solid]", field)].map((el) => {
-      const r = el.getBoundingClientRect();
-      return { el, x: (r.left - fr.left) / T, y: (fr.bottom - r.bottom) / T, w: r.width / T, h: r.height / T };
-    });
-    const pipe = rects.find((r) => r.el.hasAttribute("data-spawn"));
-    spawnX = pipe ? pipe.x - 0.95 : W - 1;
+    const box = (el) => { const r = el.getBoundingClientRect(); return { el, x: (r.left - fr.left) / T, y: (fr.bottom - r.bottom) / T, w: r.width / T, h: r.height / T }; };
+    rects = $$("[data-solid], [data-block]", active.el).filter((el) => el.offsetParent).map(box);
+    active.coins.forEach((c) => Object.assign(c, box(c.el), { el: c.el, got: c.got }));
+    V.npcs = $$("[data-npc]", active.el).filter((el) => !el.classList.contains("hidden")).map(box);
+    V.goal = $("[data-goal]", active.el) && box($("[data-goal]", active.el));
+    V.door = $("[data-door]", active.el) && { ...box($("[data-door]", active.el)), h: 3 }; // tall trigger: jumping past still counts
+    V.outBox = active.out && box(active.out);
+    V.inBox = active.in && box(active.in);
   }
-  function spawnHero() {
-    const center = rects.find((r) => r.el.dataset.block === "multi");
-    P.x = center ? center.x + (center.w - P.w) / 2 : W / 2;
-    P.y = center ? center.y + center.h : 0;
-    P.vx = P.vy = 0; P.ground = true;
+
+  function enterStage(st) {
+    if (active === st) return;
+    const wasFocused = active && document.activeElement === active.el;
+    // tidy the stage we are leaving
+    if (active) { V.enemies?.forEach((en) => en.el.remove()); V.boss?.el.remove(); }
+    active = st;
+    V = { enemies: [], nextEnemy: 1.5, moved: false, blockCoins: 0, stomps: 0, host: false, step: 0, stepT: 0, boss: null };
+    [hero, follower, ghost, coach, pointer].forEach((el) => st.el.append(el));
+    measure();
+    if (V.inBox) { // pop out of the entry pipe
+      P.x = V.inBox.x + (V.inBox.w - P.w) / 2; P.y = V.inBox.y + V.inBox.h - P.h; emerging = 0.55;
+      hero.style.zIndex = "5"; sfx.pipe();
+    } else {
+      const c = rects.find((r) => r.el.dataset.block === "multi");
+      P.x = c ? c.x + (c.w - P.w) / 2 : 1; P.y = c ? c.y + c.h : 0;
+    }
+    P.vx = P.vy = 0; P.ground = true; P.face = 1; target = null; warping = 0; trail = [];
+    follower.classList.toggle("hidden", !G.dino);
+    if (st.el.dataset.boss != null && !G.bossDown) spawnBoss();
+    if (wasFocused) st.el.focus({ preventScroll: true });
+    V.script = SCRIPTS[st.name]?.(st) || [];
+    showStep();
+    render(0); // draw in place right away, even before the next frame
   }
-  const overlapX = (r) => P.x + P.w > r.x + 0.02 && P.x < r.x + r.w - 0.02;
-  const overlapY = (r) => P.y + P.h > r.y + 0.02 && P.y < r.y + r.h - 0.02;
-  const touches = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+  /* ---------- coach ---------- */
+  function showStep() {
+    while (V.step < V.script.length && V.script[V.step].until?.()) V.step++;
+    const sc = V.script[V.step];
+    if (!sc) { coach.classList.remove("is-shown"); pointer.classList.add("hidden"); return; }
+    coach.innerHTML = sc.text; coach.classList.add("is-shown"); V.stepT = 0;
+  }
+  function placeCoach(dt) {
+    const sc = V.script[V.step];
+    if (!sc) { coach.classList.remove("is-shown"); pointer.classList.add("hidden"); return; }
+    V.stepT += dt;
+    if (sc.until?.() || (sc.after && V.stepT > sc.after)) { V.step++; showStep(); return; }
+    if (sc.ttl && V.stepT > sc.ttl) { V.step = V.script.length; showStep(); return; }
+    const fw = active.el.clientWidth, cw = coach.offsetWidth, ch = coach.offsetHeight;
+    const hx = (P.x + P.w / 2) * T, hy = (H - P.y - P.h) * T;
+    const left = Math.max(4, Math.min(fw - cw - 4, hx - cw / 2));
+    coach.style.transform = `translate(${Math.round(left)}px, ${Math.round(hy - ch - 14)}px)`;
+    coach.style.setProperty("--tail", `${Math.round(hx - left)}px`);
+    const tgt = sc.target?.();
+    if (tgt && tgt.offsetParent) {
+      const fr = active.el.getBoundingClientRect(), r = tgt.getBoundingClientRect();
+      pointer.style.translate = `${Math.round(r.left - fr.left + r.width / 2 - 10)}px ${Math.round(r.top - fr.top - 22)}px`; // transform is taken by the bob animation
+      pointer.classList.remove("hidden");
+    } else pointer.classList.add("hidden");
+  }
+
+  /* ---------- blocks, coins, enemies, boss ---------- */
+  function hitBlock(b) {
+    bumpEl(b.el);
+    if (b.kind === "brick" || b.hits <= 0) { sfx.bump(); return; }
+    b.hits--; popCoin(b.el); sfx.coin(); addCoin(); addScore(200); V.blockCoins++;
+    const r = b.el.getBoundingClientRect(); popScore("200", r.left + r.width / 4, r.top - 20);
+    if (b.hits === 0) setTimeout(() => { $("img", b.el).src = SPR("qblock-used"); b.el.setAttribute("aria-label", "Empty block"); }, 120);
+  }
+  stages.forEach((st) => st.blocks.forEach((b) => b.el.addEventListener("click", (e) => { e.stopPropagation(); hitBlock(b); })));
 
   function addEnemy(kind) {
     const def = ENEMY[kind], el = document.createElement("img");
-    el.src = SPR(def.frames[0]); el.alt = "";
+    el.src = SPR(def.frames[0]); el.alt = ""; el.dataset.enemy = kind;
     el.className = "absolute left-0 top-0 z-[5] cursor-pointer select-none";
     el.style.cssText += `image-rendering:pixelated;width:var(--tile);height:calc(var(--tile)*${def.aspect})`;
     el.title = kind === "bug" ? "A bug. Stomp it!" : "Legacy code. Refactor it!";
-    const en = { kind, def, el, x: spawnX, y: 0, w: 0.8, h: def.aspect * 0.9, vx: -(def.speed + Math.random() * 0.5), flat: 0, t: 0 };
-    el.dataset.enemy = kind;
-    el.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); startPlaying(); squash(en); });
-    enemyLayer.append(el); enemies.push(en);
+    const x = V.outBox ? V.outBox.x - 0.95 : W - 1;
+    const en = { kind, def, el, x, y: 0, w: 0.8, h: def.aspect * 0.9, vx: -(def.speed + Math.random() * 0.5), flat: 0, t: 0 };
+    el.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); begin(); squash(en); });
+    active.layer.append(el); V.enemies.push(en);
   }
   function squash(en) {
     if (en.flat) return;
-    en.flat = 0.7; en.el.src = SPR(en.def.flat); sfx.stomp(); addScore(en.def.points);
-    fixed++; $("#bugs-fixed").textContent = pad(fixed, 2); coachAt(4);
+    en.flat = 0.7; en.el.src = SPR(en.def.flat); sfx.stomp(); addScore(en.def.points); V.stomps++;
+    fixed++; $("#bugs-fixed").textContent = pad2(fixed);
     const r = en.el.getBoundingClientRect(); popScore(en.def.label, r.left - 8, r.top - 18);
     if (fixed === 10) { toast("10 FIXES. SHIP IT!"); fireworks(3); }
   }
-  function hurtHero(fromX, kind) {
+  const pad2 = (v) => pad(v, 2);
+
+  function spawnBoss() {
+    const el = document.createElement("img");
+    el.src = SPR("boss-1"); el.alt = ""; el.title = "Boss: PROD INCIDENT. Stomp it 3 times!";
+    el.className = "absolute left-0 top-0 z-[6] select-none";
+    el.style.cssText += "image-rendering:pixelated;width:calc(var(--tile)*2);height:calc(var(--tile)*1.75)";
+    V.boss = { el, x: W * 0.6, y: 0, w: 1.6, h: 1.5, vx: -1.3, hp: 3, inv: 0, t: 0, down: 0 };
+    active.layer.append(el); paintBossHp();
+  }
+  function paintBossHp() {
+    const hp = $("[data-boss-hp]"); if (!hp) return;
+    hp.innerHTML = [0, 1, 2].map((i) => `<i class="inline-block h-3 w-3 border-2 border-ink ${i < (V.boss?.hp ?? 0) ? "bg-mario" : "bg-white/20"}"></i>`).join("");
+  }
+  function stompBoss() {
+    const b = V.boss; b.hp--; b.inv = 0.9; sfx.stomp(); addScore(1000); paintBossHp();
+    const r = b.el.getBoundingClientRect(); popScore(b.hp ? "HIT!" : "INCIDENT RESOLVED", r.left, r.top - 20);
+    if (!b.hp) {
+      G.bossDown = true; b.down = 1; b.el.src = SPR("boss-flat"); fireworks(5); sfx.flag();
+      toast("BOSS DEFEATED! +5000"); addScore(5000);
+    }
+  }
+
+  function hurtHero(fromX, msg) {
     P.hurt = 1.2; P.vx = (P.x < fromX ? -1 : 1) * 5; P.vy = 7; P.ground = false;
     hero.classList.remove("is-hurt"); void hero.offsetWidth; hero.classList.add("is-hurt");
-    sfx.hurt(); toast(kind === "bug" ? "A BUG GOT TO PROD! STOMP IT FROM ABOVE" : "LEGACY CODE BIT BACK! STOMP IT FROM ABOVE");
+    sfx.hurt(); toast(msg);
   }
 
-  function warp() {
-    if (warping) return;
-    warping = 0.7; hero.style.zIndex = "5"; sfx.pipe(); startPlaying(); coachAt(5);
+  /* ---------- warps ---------- */
+  function warpTo(next) {
+    if (warping || !next) return;
+    warping = 0.7; hero.style.zIndex = "5"; sfx.pipe(); begin();
     setTimeout(() => {
-      $("#projects").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
-      toast("WARP ZONE! WELCOME TO WORLD 1-4");
-      setTimeout(() => { warping = 0; hero.style.zIndex = ""; spawnHero(); }, 600);
-    }, 700);
+      next.el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+      toast(`WORLD ${next.name}`);
+      setTimeout(() => { if (active !== next) enterStage(next); next.el.focus({ preventScroll: true }); }, 900);
+    }, 650);
   }
-  $("[data-warp]", field).addEventListener("pointerdown", (e) => { e.stopPropagation(); warp(); });
+  stages.forEach((st) => st.out?.addEventListener("pointerdown", (e) => { e.stopPropagation(); if (active === st) warpTo(st.next); }));
 
-  // click / tap to move: walk toward the tapped spot, tap above your head to jump
-  let target = null, tapJump = 0;
-  field.addEventListener("pointerdown", (e) => {
-    field.focus({ preventScroll: true }); startPlaying();
-    if (e.target.closest("[data-block], [data-warp], #p2, [data-enemy]")) return;
-    const fr = field.getBoundingClientRect();
+  /* ---------- input ---------- */
+  function begin() {
+    if (!G.started) { G.started = true; everPlayed = true; }
+    if (TOUCH) padEl.classList.remove("hidden");
+  }
+  stages.forEach((st) => st.el.addEventListener("pointerdown", (e) => {
+    if (active !== st) enterStage(st);
+    st.el.focus({ preventScroll: true }); begin();
+    if (e.target.closest("[data-block], [data-pipe], #p2, [data-enemy], #flagpole, [data-npc]")) return;
+    const fr = st.el.getBoundingClientRect();
     target = (e.clientX - fr.left) / T;
-    if ((fr.bottom - e.clientY) / T > P.y + P.h + 0.4 && P.ground) tapJump = 0.3;
+    if ((fr.bottom - e.clientY) / T > P.y + P.h + 0.4) tapJump = 0.3;
+  }));
+  const KEYMAP = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "jump", ArrowUp: "jump", KeyW: "jump", ArrowDown: "down", KeyS: "down" };
+  const playing = () => document.activeElement?.hasAttribute?.("data-stage");
+  addEventListener("keydown", (e) => {
+    const k = KEYMAP[e.code]; if (!k || !playing()) return;
+    if (document.activeElement !== active?.el) enterStage(stages.find((st) => st.el === document.activeElement));
+    e.preventDefault(); keys[k] = true; begin();
+  });
+  addEventListener("keyup", (e) => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+  addEventListener("blur", () => { keys.left = keys.right = keys.jump = keys.down = false; });
+  $$("[data-pad]").forEach((btn) => {
+    const k = btn.dataset.pad;
+    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[k] = true; begin(); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => btn.addEventListener(ev, () => { keys[k] = false; }));
   });
 
+  // Player 2 cheers you on in 1-1
+  const p2 = $("#p2"), p2img = $("img", p2);
+  const P2_LINES = ["PLAYER 2: RACE YOU TO THE FLAG!", "PLAYER 2: I'VE GOT THE ON-CALL PAGER.", "PLAYER 2: SHIP IT!", "PLAYER 2: THE DINO IS IN WORLD 1-2."];
+  let p2Line = 0;
+  p2.addEventListener("click", (e) => { e.stopPropagation(); hop(p2, p2img, "hero2"); sfx.jump(); toast(P2_LINES[p2Line++ % P2_LINES.length]); });
+  if (!reducedMotion) setInterval(() => { if (active?.name === "1-1" && stageVisible && !document.hidden) hop(p2, p2img, "hero2"); }, 5200);
+
+  /* ---------- physics: tile units, y grows up from the stage floor ---------- */
+  const overlapX = (r) => P.x + P.w > r.x + 0.02 && P.x < r.x + r.w - 0.02;
+  const overlapY = (r) => P.y + P.h > r.y + 0.02 && P.y < r.y + r.h - 0.02;
+  const touches = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  const NIGHT_G = { x: 1, y: 3, shy: false, t: 0 };
+
   function step(dt) {
-    if (warping) { P.y -= 1.6 * dt; P.vx = 0; return; } // sink into the pipe
-    const pipe = rects.find((r) => r.el.hasAttribute("data-warp"));
-    if (keys.down && P.ground && pipe && Math.abs(P.y - (pipe.y + pipe.h)) < 0.05 && P.x + P.w / 2 > pipe.x && P.x + P.w / 2 < pipe.x + pipe.w) {
-      P.x = pipe.x + (pipe.w - P.w) / 2; warp(); return;
+    if (emerging > 0) { emerging -= dt; P.y += (1 / 0.55) * dt * P.h; if (emerging <= 0) { P.y = V.inBox.y + V.inBox.h; hero.style.zIndex = ""; } return; }
+    if (warping) { P.y -= 1.6 * dt; P.vx = 0; return; }
+
+    // down on the exit pipe warps to the next world
+    const op = V.outBox;
+    if (keys.down && P.ground && op && Math.abs(P.y - (op.y + op.h)) < 0.05 && P.x + P.w / 2 > op.x && P.x + P.w / 2 < op.x + op.w) {
+      P.x = op.x + (op.w - P.w) / 2; warpTo(active.next); return;
     }
-    const accel = P.ground ? 40 : 24, maxV = 6;
+
     let dir = P.hurt > 0.9 ? 0 : (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     if (dir) target = null;
     else if (target !== null && P.hurt < 0.9) {
       const d = target - (P.x + P.w / 2);
       if (Math.abs(d) < 0.2 || (P.x <= 0 && d < 0) || (P.x >= W - P.w && d > 0)) target = null; else dir = Math.sign(d);
     }
-    if (Math.abs(P.vx) > 1 && stepI === 1) coachAt(2);
+    const accel = P.ground ? 40 : 24, maxV = 6;
     if (dir) { P.vx += dir * accel * dt; P.face = dir; } else { P.vx *= P.ground ? 0.78 : 0.96; if (Math.abs(P.vx) < 0.05) P.vx = 0; }
     P.vx = Math.max(-maxV, Math.min(maxV, P.vx));
     P.hurt = Math.max(0, P.hurt - dt);
+    if (Math.abs(P.vx) > 1) V.moved = true;
 
+    const pressed = (keys.jump && !lastJump) || tapJump > 0;
+    if (pressed && (P.ground || (G.dino && P.jumps === 1))) {
+      P.vy = P.ground ? 13.5 : 11.5; P.jumps = P.ground ? 1 : 2; P.ground = false; tapJump = 0; sfx.jump(); V.moved = true;
+    }
     const holding = keys.jump || tapJump > 0;
-    if (((keys.jump && !lastJump) || tapJump > 0) && P.ground && P.vy <= 0) { P.vy = 13.5; P.ground = false; sfx.jump(); if (stepI === 1) coachAt(2); }
     tapJump = Math.max(0, tapJump - dt);
     if (!holding && P.vy > 4 && !P.hurt) P.vy = 4; // variable jump height
     lastJump = keys.jump;
@@ -701,122 +855,122 @@
         P.y = r.y - P.h; P.vy = 0;
         const head = rects.filter((q) => q.el.dataset.block && overlapX(q) && Math.abs(q.y - (P.y + P.h)) < 0.05)
           .sort((a, b) => Math.abs(a.x + a.w / 2 - (P.x + P.w / 2)) - Math.abs(b.x + b.w / 2 - (P.x + P.w / 2)))[0];
-        const b = head && blocks.find((k) => k.el === head.el);
+        const b = head && active.blocks.find((k) => k.el === head.el);
         if (b) hitBlock(b);
       } else { P.y = r.y + r.h; P.vy = 0; P.ground = true; }
     }
+    if (P.ground) P.jumps = 0;
     if (P.y > H) P.y = H;
-
-    // bugs and legacy turtles crawl out of the pipe and walk left
-    if (!reducedMotion && (nextEnemy -= dt) <= 0 && enemies.length < 3) {
-      addEnemy(Math.random() < 0.3 ? "turtle" : "bug"); nextEnemy = 3 + Math.random() * 4;
-    }
     const hb = { x: P.x + 0.1, y: P.y, w: P.w - 0.2, h: P.h - 0.1 };
-    for (const en of enemies) {
+
+    // coins
+    for (const c of active.coins) {
+      if (c.got || !touches(hb, c)) continue;
+      c.got = true; c.el.classList.add("hidden"); sfx.coin(); addCoin(); addScore(200);
+      const r = c.el.getBoundingClientRect(); popScore("200", r.left, r.top - 16);
+    }
+    // characters you can meet
+    for (const npc of V.npcs || []) {
+      if (!touches(hb, npc)) continue;
+      const kind = npc.el.dataset.npc;
+      if (kind === "dino" && !G.dino) {
+        G.dino = true; npc.el.classList.add("hidden"); follower.classList.remove("hidden"); sfx.oneup();
+        toast("DINO JOINED YOUR PARTY! DOUBLE JUMP UNLOCKED"); measure();
+      } else if (kind === "host" && !V.host) {
+        V.host = true; sfx.coin(); hop(npc.el, npc.el, "host-noop");
+        toast("HOST: WELCOME! DIVESH WILL WRITE BACK. USE THE FORM BELOW.", 3600);
+      }
+    }
+    // goal + castle door
+    if (V.goal && !goalDone && touches(hb, V.goal)) courseClear();
+    if (V.door && goalDone && touches(hb, V.door) && !warping) { warping = 0; warpTo(active.next); }
+
+    // enemies crawl out of the exit pipe and walk left
+    if (active.kinds.length && !reducedMotion && (V.nextEnemy -= dt) <= 0 && V.enemies.length < 3) {
+      addEnemy(active.kinds[Math.floor(Math.random() * active.kinds.length)]); V.nextEnemy = 3 + Math.random() * 4;
+    }
+    for (const en of V.enemies) {
       if (en.flat) { en.flat -= dt; continue; }
       en.x += en.vx * dt; en.t += dt;
       if (!touches(hb, en)) continue;
-      if (P.vy < 0 && P.y > en.y + en.h * 0.35) { squash(en); P.vy = 9; P.ground = false; }
-      else if (!P.hurt) hurtHero(en.x + en.w / 2, en.kind);
+      if (P.vy < 0 && P.y > en.y + en.h * 0.35) { squash(en); P.vy = 9; P.ground = false; P.jumps = 1; }
+      else if (!P.hurt) hurtHero(en.x + en.w / 2, en.kind === "bug" ? "A BUG GOT TO PROD! STOMP IT FROM ABOVE" : "LEGACY CODE BIT BACK! STOMP IT FROM ABOVE");
     }
-    enemies = enemies.filter((en) => {
-      const keep = en.x > -1.2 && (!en.flat || en.flat > 0);
-      if (!keep) en.el.remove();
-      return keep;
-    });
+    V.enemies = V.enemies.filter((en) => { const keep = en.x > -1.2 && (!en.flat || en.flat > 0); if (!keep) en.el.remove(); return keep; });
 
-    // night ghost: drifts toward you when your back is turned, hides its face when you look
-    if (night) {
-      G.t += dt;
-      const toHero = Math.sign(P.x - G.x) || 1;
-      G.shy = P.face === -toHero;
-      if (!G.shy) { G.x += toHero * 1.1 * dt; G.y += (Math.min(H - 1.2, P.y + 1.5) - G.y) * 0.6 * dt; }
+    // boss patrols the arena
+    const B = V.boss;
+    if (B && !B.down) {
+      B.t += dt; B.inv = Math.max(0, B.inv - dt);
+      B.x += B.vx * dt * (B.hp === 1 ? 1.8 : 1);
+      if (B.x < W * 0.3) B.vx = Math.abs(B.vx); if (B.x > W * 0.78) B.vx = -Math.abs(B.vx);
+      if (touches(hb, B)) {
+        if (P.vy < 0 && P.y > B.y + B.h * 0.4 && !B.inv) { stompBoss(); P.vy = 11; P.ground = false; P.jumps = 1; }
+        else if (!P.hurt && !B.inv) hurtHero(B.x + B.w / 2, "THE INCIDENT ESCALATED! STOMP IT FROM ABOVE");
+      }
     }
+
+    // night ghost
+    if (night) {
+      NIGHT_G.t += dt;
+      const toHero = Math.sign(P.x - NIGHT_G.x) || 1;
+      NIGHT_G.shy = P.face === -toHero;
+      if (!NIGHT_G.shy) { NIGHT_G.x += toHero * 1.1 * dt; NIGHT_G.y += (Math.min(H - 1.2, P.y + 1.5) - NIGHT_G.y) * 0.6 * dt; }
+    }
+    trail.push({ x: P.x, y: P.y, face: P.face }); if (trail.length > 24) trail.shift();
   }
 
   function render(dt) {
     let frame = "hero-idle";
-    if (!P.ground) frame = "hero-jump";
+    if (!P.ground && !emerging) frame = "hero-jump";
     else if (Math.abs(P.vx) > 0.3) { walkT += dt * Math.abs(P.vx) * 2.2; frame = Math.floor(walkT) % 2 ? "hero-walk1" : "hero-walk2"; }
     const src = SPR(frame);
     if (!hero.src.endsWith(src)) hero.src = src;
     hero.style.transform = `translate(${Math.round((P.x - (1 - P.w) / 2) * T)}px, ${Math.round((H - P.y - P.h) * T)}px) scaleX(${P.face})`;
-    for (const en of enemies) {
+    if (G.dino && trail.length) {
+      const f = trail[0], fx = f.x - f.face * 1.1;
+      follower.style.transform = `translate(${Math.round(Math.max(0, fx) * T)}px, ${Math.round((H - f.y - 1) * T)}px) scaleX(${f.face})`;
+    }
+    for (const en of V.enemies) {
       if (!en.flat) { const f = SPR(en.def.frames[Math.floor(en.t * 5) % 2]); if (!en.el.src.endsWith(f)) en.el.src = f; }
       en.el.style.transform = `translate(${Math.round((en.x - 0.1) * T)}px, ${Math.round((H - en.y - en.def.aspect) * T)}px)`;
     }
-    placeCoach();
+    const B = V.boss;
+    if (B) {
+      if (!B.down) { const f = SPR(Math.floor(B.t * 4) % 2 ? "boss-1" : "boss-2"); if (!B.el.src.endsWith(f)) B.el.src = f; }
+      B.el.style.opacity = B.inv && Math.floor(B.inv * 10) % 2 ? ".4" : "1";
+      B.el.style.transform = `translate(${Math.round((B.x - 0.2) * T)}px, ${Math.round((H - 1.75) * T)}px) scaleX(${B.vx > 0 ? -1 : 1})`;
+    }
+    placeCoach(dt);
     if (night) {
-      const g = SPR(G.shy ? "ghost-shy" : "ghost");
+      const g = SPR(NIGHT_G.shy ? "ghost-shy" : "ghost");
       if (!ghost.src.endsWith(g)) ghost.src = g;
-      const bob = Math.round(Math.sin(G.t * 3) * 3);
-      ghost.style.transform = `translate(${Math.round(G.x * T)}px, ${Math.round((H - G.y - 1) * T) + bob}px) scaleX(${P.x > G.x ? 1 : -1})`;
+      ghost.style.transform = `translate(${Math.round(NIGHT_G.x * T)}px, ${Math.round((H - NIGHT_G.y - 1) * T + Math.sin(NIGHT_G.t * 3) * 3)}px) scaleX(${P.x > NIGHT_G.x ? 1 : -1})`;
     }
   }
 
-  /* tutorial coach: a speech bubble over the hero teaches one move at a time */
-  const coach = $("#coach"), pointer = $("#pointer");
-  const TOUCH = matchMedia("(pointer: coarse)").matches;
-  const kbd = (k) => `<kbd>${k}</kbd>`;
-  const STEPS = [
-    { text: TOUCH ? "TAP ME TO PLAY!" : "CLICK ME TO PLAY!" },
-    { text: TOUCH ? "TAP WHERE TO RUN.<br>TAP HIGH TO JUMP." : `${kbd("←")}${kbd("→")} RUN · ${kbd("SPACE")} JUMP<br>OR JUST CLICK WHERE TO GO`, after: 6 },
-    { text: "JUMP INTO A ? BLOCK<br>FROM BELOW", target: () => blocks.find((b) => b.kind !== "brick" && b.hits > 0)?.el },
-    { text: "BUGS! STOMP ONE<br>FROM ABOVE", target: () => enemies.find((en) => !en.flat)?.el },
-    { text: TOUCH ? "TAP THE PIPE TO WARP" : `STAND ON THE PIPE<br>AND PRESS ${kbd("↓")} TO WARP`, target: () => $("[data-warp]", field) },
-    { text: "NICE! YOU KNOW THE GAME.", ttl: 2.5 },
-  ];
-  let stepI = 0, stepT = 0;
-  function coachAt(i) {
-    if (i <= stepI || stepI >= STEPS.length) return;
-    stepI = i; stepT = 0;
-    if (i < STEPS.length) { coach.innerHTML = STEPS[i].text; coach.classList.add("is-shown"); }
-  }
-  coach.innerHTML = STEPS[0].text; coach.classList.add("is-shown");
-  function placeCoach() {
-    if (stepI >= STEPS.length) { coach.classList.remove("is-shown"); pointer.classList.add("hidden"); return; }
-    const st = STEPS[stepI];
-    stepT += 1 / 60;
-    if (st.ttl && stepT > st.ttl) { stepI = STEPS.length; return; }
-    if (st.after && stepT > st.after) coachAt(stepI + 1);
-    const fw = field.clientWidth, cw = coach.offsetWidth, ch = coach.offsetHeight;
-    const hx = (P.x + P.w / 2) * T, hy = (H - P.y - P.h) * T;
-    const left = Math.max(4, Math.min(fw - cw - 4, hx - cw / 2));
-    coach.style.transform = `translate(${Math.round(left)}px, ${Math.round(hy - ch - 14)}px)`;
-    coach.style.setProperty("--tail", `${Math.round(hx - left)}px`);
-    const tgt = st.target?.();
-    if (tgt) {
-      const fr = field.getBoundingClientRect(), r = tgt.getBoundingClientRect();
-      pointer.style.transform = `translate(${Math.round(r.left - fr.left + r.width / 2 - 10)}px, ${Math.round(r.top - fr.top - 22)}px)`;
-      pointer.classList.remove("hidden");
-    } else pointer.classList.add("hidden");
-  }
+  // the hero follows you: whichever stage is most on screen becomes active
+  const ratios = new Map();
+  let stageVisible = true;
+  const stageObs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => ratios.set(e.target, e.intersectionRatio));
+    let best = null, bestR = 0;
+    stages.forEach((st) => { const r = ratios.get(st.el) || 0; if (r > bestR) { best = st; bestR = r; } });
+    stageVisible = bestR > 0;
+    if (best && bestR >= 0.35 && best !== active && !warping) enterStage(best);
+    if (TOUCH) padEl.classList.toggle("hidden", !(G.started && stageVisible));
+  }, { threshold: [0, 0.2, 0.35, 0.5, 0.75, 1] });
+  stages.forEach((st) => stageObs.observe(st.el));
 
   function loop(now) {
     const dt = Math.min(0.033, (now - (loop.last || now)) / 1000); loop.last = now;
-    if (fieldVisible) { step(dt); render(dt); }
+    if (active && stageVisible) { step(dt); render(dt); }
     requestAnimationFrame(loop);
   }
-  new IntersectionObserver(([e]) => { fieldVisible = e.isIntersecting; }, { threshold: 0 }).observe(field);
-  ["hero-walk1", "hero-walk2", "hero-jump", "hero2-jump", "qblock-used", "bug-2", "bug-flat", "turtle-1", "turtle-2", "shell", "ghost-shy"]
+  ["hero-walk1", "hero-walk2", "hero-jump", "hero2-jump", "qblock-used", "bug-2", "bug-flat", "turtle-1", "turtle-2", "shell", "ghost-shy", "boss-2", "boss-flat", "dino"]
     .forEach((n) => { new Image().src = SPR(n); });
-
-  addEventListener("resize", () => { const ox = P.x / (W || 1); measure(); P.x = ox * W; enemies.forEach((en) => { en.x = Math.min(en.x, spawnX); }); });
-  (document.fonts?.ready ?? Promise.resolve()).then(() => { measure(); spawnHero(); requestAnimationFrame(loop); });
-
-  const KEYMAP = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "jump", ArrowUp: "jump", KeyW: "jump", ArrowDown: "down", KeyS: "down" };
-  function startPlaying() { if (stepI === 0) coachAt(1); }
-  field.addEventListener("keydown", (e) => {
-    const k = KEYMAP[e.code]; if (!k) return;
-    e.preventDefault(); keys[k] = true; startPlaying();
-  });
-  field.addEventListener("keyup", (e) => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
-  field.addEventListener("blur", () => { keys.left = keys.right = keys.jump = keys.down = false; });
-  $$("[data-pad]").forEach((btn) => {
-    const k = btn.dataset.pad;
-    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[k] = true; startPlaying(); });
-    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => btn.addEventListener(ev, () => { keys[k] = false; }));
-  });
+  addEventListener("resize", () => { const ox = P.x / (W || 1); measure(); P.x = ox * W; });
+  (document.fonts?.ready ?? Promise.resolve()).then(() => { enterStage(stages[0]); requestAnimationFrame(loop); });
 
   /* ================= recruiter brief ================= */
   const brief = $("#brief");

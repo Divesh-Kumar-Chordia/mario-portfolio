@@ -92,7 +92,7 @@
   .hud-link[aria-current="true"]::before { content: "\25B6\00A0"; }
 
   /* ---- touch pad ---- */
-  .pad-btn { @apply grid h-14 w-14 place-items-center border-3 border-ink bg-white/90 font-body text-[20px] font-bold text-ink shadow-px active:translate-y-1 active:shadow-none; touch-action: none; }
+  .pad-btn { @apply grid h-12 w-12 place-items-center opacity-90 border-3 border-ink bg-white/90 font-body text-[20px] font-bold text-ink shadow-px active:translate-y-1 active:shadow-none; touch-action: none; }
 
   /* ---- tutorial coach bubble + pointer ---- */
   .coach { @apply pointer-events-none absolute left-0 top-0 z-30 hidden w-max max-w-[min(300px,80vw)] border-3 border-ink bg-white px-3 py-2 text-center font-pixel text-[8px] leading-4 text-ink shadow-px; }
@@ -106,7 +106,8 @@
   .tile-block img[src$="qblock.svg"], .qb img[src$="qblock.svg"] { animation: shine 1.6s steps(1) infinite; }
   .tile-block { @apply transition-transform hover:-translate-y-1; }
   .tile-block:hover img { filter: drop-shadow(0 4px 0 rgba(0,0,0,.25)); }
-  [data-warp] { @apply cursor-pointer; }
+  [data-pipe=out] { @apply cursor-pointer; }
+  [data-stage]:focus-visible { outline: 2px dashed rgba(255,255,255,.45); outline-offset: -4px; }
 
   /* ---- skill ? blocks ---- */
   .qb { @apply relative block h-10 w-10 transition-transform hover:-translate-y-1; }
