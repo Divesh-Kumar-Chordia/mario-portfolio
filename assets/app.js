@@ -310,10 +310,12 @@
     $("[data-label]", nightBtn).textContent = night ? "DAY" : "NIGHT";
     $("[data-icon]", nightBtn).src = SPR(night ? "icon-sun" : "icon-moon");
     nightBtn.setAttribute("aria-pressed", night);
+    $("#ghost").classList.toggle("hidden", !night);
   };
   paintNight();
   nightBtn.addEventListener("click", () => {
     night = !night; store.set("sdb-night", night); paintNight(); sfx.pipe();
+    if (night) toast("SOMETHING STIRS IN THE DARK...");
   });
   // a sky full of pixel stars, shown only at night
   $(".stars").innerHTML = `<i class="absolute left-0 top-0 h-[2px] w-[2px]" style="box-shadow:${Array.from({ length: 60 }, () =>
@@ -407,9 +409,22 @@
   }), { rootMargin: "-45% 0px -50% 0px" });
   $$("main > section[data-world]").forEach((s) => secObs.observe(s));
 
-  /* ================= top button ================= */
-  const toTop = $("#to-top");
-  addEventListener("scroll", () => toTop.classList.toggle("is-shown", scrollY > innerHeight), { passive: true });
+  /* ================= scroll: walker, top button ================= */
+  const walker = $("#walker"), toTop = $("#to-top");
+  let lastY = scrollY, walkFrame = 0, walkIdle;
+  function onScroll() {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const p = max > 0 ? Math.min(1, scrollY / max) : 0;
+    const dir = scrollY < lastY ? -1 : 1;
+    walker.style.transform = `translateX(${Math.round(8 + p * (innerWidth - 64))}px) scaleX(${dir})`;
+    if (Math.abs(scrollY - lastY) > 4) { walkFrame ^= 1; walker.src = SPR(walkFrame ? "hero-walk1" : "hero-walk2"); }
+    clearTimeout(walkIdle); walkIdle = setTimeout(() => { walker.src = SPR("hero-idle"); }, 140);
+    lastY = scrollY;
+    toTop.classList.toggle("is-shown", scrollY > innerHeight);
+  }
+  addEventListener("scroll", onScroll, { passive: true });
+  addEventListener("resize", onScroll);
+  onScroll();
   toTop.addEventListener("click", () => sfx.pipe());
 
   /* ================= skills: ? blocks ================= */
@@ -555,245 +570,407 @@
   $("#flagpole").addEventListener("click", (e) => { e.stopPropagation(); courseClear(); });
 
   /* =================================================================
-     THE GAME: a fixed level strip along the bottom. Scrolling the page
-     makes the hero run; each section's objects arrive on the floor as
-     that section comes on screen, and react when the hero reaches them.
+     THE GAME: every section is a stage. One hero travels between them
+     through pipes, and follows you when you scroll.
      ================================================================= */
   const TOUCH = matchMedia("(pointer: coarse)").matches;
-  const runway = $("#runway"), objLayer = $("#rw-objs"), hero = $("#hero"), dino = $("#dino-follower");
-  const worldLabel = $("#rw-world"), tipLabel = $("#rw-tip");
-  const SECTIONS = {
-    start: { name: "WORLD 1-1 · OVERWORLD", theme: "sky", tip: TOUCH ? "SCROLL TO RUN · TAP HERE TO JUMP" : "SCROLL OR → TO RUN · ↑ TO JUMP" },
-    about: { name: "WORLD 1-2 · NIGHT", theme: "night", tip: "YOUR DINO SIDEKICK JOINS IN THIS WORLD" },
-    skills: { name: "WORLD 1-3 · UNDERGROUND", theme: "underground", tip: "? BLOCKS REVEAL EACH SKILL GROUP" },
-    projects: { name: "WORLD 1-4 · CASTLE", theme: "castle", tip: TOUCH ? "TAP A PIPE TO OPEN THAT PROJECT'S MAP" : "↓ AT A PIPE OPENS THAT PROJECT'S MAP" },
-    experience: { name: "WORLD 1-5 · THE CLIMB", theme: "sky", tip: "EVERY FLAG IS A LEVEL CLEARED" },
-    contact: { name: "WORLD 8-4 · MUSHROOM HOUSE", theme: "night", tip: "THE END · SAY HI BELOW" },
+  const kbd = (k) => `<kbd>${k}</kbd>`;
+  const hero = $("#hero"), ghost = $("#ghost");
+  const coach = $("#coach"), pointer = $("#pointer");
+  const follower = Object.assign(document.createElement("img"), { src: SPR("dino"), alt: "" });
+  follower.className = "sprite absolute left-0 top-0 z-[19] hidden h-[var(--tile)] w-[var(--tile)]";
+  const padEl = $("#pad");
+
+  const ENEMY = {
+    bug: { frames: ["bug-1", "bug-2"], flat: "bug-flat", aspect: 14 / 16, speed: 1.6, points: 100, label: "BUG FIXED" },
+    turtle: { frames: ["turtle-1", "turtle-2"], flat: "shell", aspect: 11 / 16, speed: 1.0, points: 200, label: "REFACTORED" },
   };
-  const H = { y: 0, vy: 0, face: 1, walkT: 0, bounces: 0 };
-  let S = 32, heroX = 120, objs = [], pairs = [], shownO = null, lastScroll = scrollY, speed = 0, fixed = 0, trail = [];
-  let G = { dino: false };
+  const pipeHint = (n) => TOUCH ? `TAP THE PIPE TO GO TO WORLD ${n}` : `STAND ON THE PIPE + ${kbd("↓")}<br>TO WARP TO WORLD ${n}`;
 
-  const docTop = (el) => el.getBoundingClientRect().top + scrollY;
-  const sprite = (name, cls = "") => { const el = Object.assign(document.createElement("img"), { src: SPR(name), alt: "" }); el.className = `rw-obj ${cls}`; return el; };
-  const flash = (el) => { if (!el) return; el.classList.remove("rw-flash"); void el.offsetWidth; el.classList.add("rw-flash"); };
+  // per-stage scripts: each step shows until its condition is met
+  const SCRIPTS = {
+    "1-1": (st) => [
+      { text: TOUCH ? "TAP ME TO PLAY!" : "CLICK ME TO PLAY!", until: () => G.started },
+      { text: TOUCH ? "TAP WHERE TO RUN.<br>TAP HIGH TO JUMP." : `${kbd("←")}${kbd("→")} RUN · ${kbd("SPACE")} JUMP<br>OR JUST CLICK WHERE TO GO`, until: () => V.moved, after: 6 },
+      { text: "JUMP INTO A ? BLOCK<br>FROM BELOW", target: () => st.blocks.find((b) => b.kind !== "brick" && b.hits > 0)?.el, until: () => V.blockCoins > 0 },
+      { text: "BUGS! STOMP ONE<br>FROM ABOVE", target: () => V.enemies.find((en) => !en.flat)?.el, until: () => V.stomps > 0 },
+      { text: pipeHint(st.nextName), target: () => st.out },
+    ],
+    "1-2": (st) => [
+      { text: "WORLD 1-2 · NIGHT<br>A DINO IS WAITING. WALK INTO IT!", target: () => $("[data-npc=dino]", st.el), until: () => G.dino },
+      { text: `DINO JOINED! DOUBLE JUMP UNLOCKED.<br>${pipeHint(st.nextName)}`, target: () => st.out },
+    ],
+    "1-3": (st) => [
+      { text: "WORLD 1-3 · UNDERGROUND<br>GRAB EVERY COIN!", target: () => st.coins.find((c) => !c.got)?.el, until: () => st.coins.every((c) => c.got) },
+      { text: `ALL COINS! ${pipeHint(st.nextName)}`, target: () => st.out },
+    ],
+    "1-4": (st) => [
+      { text: "WORLD 1-4 · BOSS FIGHT<br>A PROD INCIDENT! STOMP IT 3 TIMES", target: () => V.boss?.el, until: () => G.bossDown },
+      { text: `INCIDENT RESOLVED!<br>${pipeHint(st.nextName)}`, target: () => st.out },
+    ],
+    "1-5": (st) => [
+      { text: "WORLD 1-5 · THE GOAL<br>RUN TO THE FLAGPOLE!", target: () => $("#flagpole"), until: () => goalDone },
+      { text: "ENTER THE CASTLE!", target: () => $("[data-door]", st.el) },
+    ],
+    "8-4": (st) => [
+      { text: "WORLD 8-4 · MUSHROOM HOUSE<br>SAY HI TO THE HOST", target: () => $("[data-npc=host]", st.el), until: () => V.host },
+      { text: "THE END. THANKS FOR PLAYING!<br>LEAVE A MESSAGE BELOW", ttl: 6 },
+    ],
+  };
 
-  /* ---------- building the level from the page ---------- */
-  function build() {
-    const keep = new Map(objs.map((o) => [o.key, o.done]));
-    objLayer.innerHTML = ""; objs = [];
-    S = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--s")) || 32;
-    heroX = Math.round(Math.min(innerWidth * 0.28, 260));
-    const add = (type, anchor, key, extra = {}) => anchor && objs.push({ type, anchor, key: `${type}:${key}`, ...extra });
+  // global progress (G) and per-visit state (V)
+  const G = { started: false, dino: false, bossDown: false };
+  let V = {};
+  const P = { x: 0, y: 0, vx: 0, vy: 0, w: 0.8, h: 1, ground: true, face: 1, hurt: 0, jumps: 0 };
+  const keys = { left: false, right: false, jump: false, down: false };
+  let T = 48, W = 0, H = 0, rects = [], lastJump = false, walkT = 0, warping = 0, emerging = 0;
+  let target = null, tapJump = 0, fixed = 0, active = null, trail = [];
 
-    add("p2", $("#start h1"), 0);
-    $$("#start .px-btn").forEach((b, i) => add("coin", b, `start${i}`));
-    add("dino", $("#about article"), 0);
-    $$("#about ul.px-panel > li").forEach((li, i) => add("coin", li, `stat${i}`));
-    $$("#skill-groups > article").forEach((a, i) => add("qblock", a, i));
-    $$("#levels .level-card").forEach((c, i) => { add("bug", c, i); add("pipe", c, i); });
-    add("boss", $("#side-quests"), 0);
-    $$("#side-quests > article").forEach((a, i) => add("coin", a, `side${i}`));
-    $$("#timeline .checkpoint").forEach((li, i) => add("flag", li, i));
-    add("goal", $("#goal"), 0);
-    add("castle", $("#goal"), 0);
-    add("host", $("#contact-form"), 0);
+  const stages = $$("[data-stage]").map((el, i, all) => ({
+    el, name: el.dataset.stage, index: i,
+    kinds: (el.dataset.enemies || "").split(",").filter(Boolean),
+    blocks: $$("[data-block]", el).map((b) => ({ el: b, kind: b.dataset.block, hits: b.dataset.block === "multi" ? 8 : 1 })),
+    coins: $$("[data-coin]", el).map((c) => ({ el: c, got: false })),
+    out: $("[data-pipe=out]", el), in: $("[data-pipe=in]", el),
+    layer: Object.assign(document.createElement("div"), { className: "contents" }),
+  }));
+  stages.forEach((st, i) => { st.next = stages[i + 1]; st.nextName = st.next?.name; st.el.append(st.layer); });
 
-    // when should each object reach the hero? when its content sits ~45% down the screen
-    const anchorPx = innerHeight * 0.45, maxScroll = document.documentElement.scrollHeight - innerHeight;
-    objs.forEach((o, i) => { o.sy = Math.max(0, Math.min(maxScroll - 40, docTop(o.anchor) - anchorPx)); o.i = i; });
-    const host = objs.find((o) => o.type === "host"); if (host) host.sy = maxScroll; // the finale: reached at the very bottom
-    objs.sort((a, b) => a.sy - b.sy || a.i - b.i);
-    // world positions: keep a minimum gap so objects never pile up
-    const GAP = { coin: 1.2, qblock: 3, bug: 2.2, pipe: 3.2, boss: 4, flag: 3, goal: 3, castle: 4, host: 3, dino: 3, p2: 2 };
-    let wx = 0, sy = -1;
-    objs.forEach((o, i) => {
-      if (o.sy <= sy) o.sy = sy + 24; // same row on the page: spread them out a little in scroll
-      wx = i ? Math.max(wx + GAP[o.type] * S, wx + (o.sy - sy) * 0.6) : o.sy * 0.6 + 4 * S;
-      o.wx = wx; sy = o.sy;
-      o.done = keep.get(o.key) || false;
-    });
-    pairs = [[0, objs[0].wx - objs[0].sy * 0.6], ...objs.map((o) => [o.sy, o.wx])];
-    pairs.push([sy + 100000, wx + 100000 * 0.6]);
-    objs.forEach(makeNode);
-    shownO = null;
+  function measure() {
+    if (!active) return;
+    const fr = active.el.getBoundingClientRect();
+    T = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tile")) || 48;
+    W = fr.width / T; H = fr.height / T;
+    const box = (el) => { const r = el.getBoundingClientRect(); return { el, x: (r.left - fr.left) / T, y: (fr.bottom - r.bottom) / T, w: r.width / T, h: r.height / T }; };
+    rects = $$("[data-solid], [data-block]", active.el).filter((el) => el.offsetParent).map(box);
+    active.coins.forEach((c) => Object.assign(c, box(c.el), { el: c.el, got: c.got }));
+    V.npcs = $$("[data-npc]", active.el).filter((el) => !el.classList.contains("hidden")).map(box);
+    V.goal = $("[data-goal]", active.el) && box($("[data-goal]", active.el));
+    V.door = $("[data-door]", active.el) && { ...box($("[data-door]", active.el)), h: 3 }; // tall trigger: jumping past still counts
+    V.outBox = active.out && box(active.out);
+    V.inBox = active.in && box(active.in);
   }
-  // scroll position -> world offset (piecewise linear through every object's anchor)
-  function worldAt(y) {
-    for (let i = 1; i < pairs.length; i++) {
-      const [y0, w0] = pairs[i - 1], [y1, w1] = pairs[i];
-      if (y <= y1) return w0 + (w1 - w0) * ((y - y0) / Math.max(1, y1 - y0));
+
+  function enterStage(st) {
+    if (active === st) return;
+    const wasFocused = active && document.activeElement === active.el;
+    // tidy the stage we are leaving
+    if (active) { V.enemies?.forEach((en) => en.el.remove()); V.boss?.el.remove(); }
+    active = st;
+    V = { enemies: [], nextEnemy: 1.5, moved: false, blockCoins: 0, stomps: 0, host: false, step: 0, stepT: 0, boss: null };
+    [hero, follower, ghost, coach, pointer].forEach((el) => st.el.append(el));
+    measure();
+    if (V.inBox) { // pop out of the entry pipe
+      P.x = V.inBox.x + (V.inBox.w - P.w) / 2; P.y = V.inBox.y + V.inBox.h - P.h; emerging = 0.55;
+      hero.style.zIndex = "5"; sfx.pipe();
+    } else {
+      const c = rects.find((r) => r.el.dataset.block === "multi");
+      P.x = c ? c.x + (c.w - P.w) / 2 : 1; P.y = c ? c.y + c.h : 0;
     }
-    return pairs[pairs.length - 1][1];
+    P.vx = P.vy = 0; P.ground = true; P.face = 1; target = null; warping = 0; trail = [];
+    follower.classList.toggle("hidden", !G.dino);
+    if (st.el.dataset.boss != null && !G.bossDown) spawnBoss();
+    if (wasFocused) st.el.focus({ preventScroll: true });
+    V.script = SCRIPTS[st.name]?.(st) || [];
+    showStep();
+    render(0); // draw in place right away, even before the next frame
   }
 
-  function makeNode(o) {
-    let el, w = S, h = S, lift = 0;
-    switch (o.type) {
-      case "coin": el = sprite("coin"); w = S * 0.45; h = S * 0.8; lift = S * 0.15; break;
-      case "qblock": el = sprite(o.done ? "qblock-used" : "qblock"); lift = S * 1.8; break;
-      case "bug": el = sprite(o.done ? "bug-flat" : "bug-1"); h = S * 0.875; break;
-      case "boss": el = sprite(o.done ? "boss-flat" : "boss-1"); w = S * 1.7; h = S * 1.5; break;
-      case "pipe": el = document.createElement("div"); el.className = "rw-obj pipe cursor-pointer"; el.style.setProperty("--tile", `${S}px`); w = S * 1.75; h = S * 1.3;
-        el.title = "Open this project's system map"; el.addEventListener("click", () => enterPipe(o)); break;
-      case "flag": el = document.createElement("div"); el.className = "rw-obj"; w = S * 0.6; h = S * 1.8;
-        el.innerHTML = `<i class="absolute bottom-0 left-0 h-full w-[3px] bg-ink"></i><span class="rw-pennant" style="bottom:${o.done ? S * 1.25 : S * 0.1}px"></span>`; break;
-      case "goal": el = document.createElement("div"); el.className = "rw-obj"; w = S * 0.6; h = S * 2.8;
-        el.innerHTML = `<i class="absolute bottom-0 left-[6px] h-full w-[4px] bg-luigi-dark"></i><i class="absolute -top-1 left-[3px] h-2.5 w-2.5 rounded-full border-2 border-ink bg-luigi"></i><span class="rw-pennant" style="left:-12px;bottom:${o.done ? 2 : S * 2.2}px;border-left:0;border-right:16px solid #fff"></span>`; break;
-      case "castle": el = sprite("castle"); w = h = S * 2.8; break;
-      case "host": el = sprite("host"); break;
-      case "dino": el = sprite("dino", o.done ? "hidden" : ""); break;
-      case "p2": el = sprite("hero2-idle"); break;
-    }
-    Object.assign(o, { el, w, h, lift });
-    el.style.width = `${w}px`; el.style.height = `${h}px`; el.style.bottom = `${S + lift}px`;
-    if (o.type === "qblock" || o.type === "pipe") el.style.zIndex = "1";
-    objLayer.append(el);
+  /* ---------- coach ---------- */
+  function showStep() {
+    while (V.step < V.script.length && V.script[V.step].until?.()) V.step++;
+    const sc = V.script[V.step];
+    if (!sc) { coach.classList.remove("is-shown"); pointer.classList.add("hidden"); return; }
+    coach.innerHTML = sc.text; coach.classList.add("is-shown"); V.stepT = 0;
+  }
+  function placeCoach(dt) {
+    const sc = V.script[V.step];
+    if (!sc) { coach.classList.remove("is-shown"); pointer.classList.add("hidden"); return; }
+    V.stepT += dt;
+    if (sc.until?.() || (sc.after && V.stepT > sc.after)) { V.step++; showStep(); return; }
+    if (sc.ttl && V.stepT > sc.ttl) { V.step = V.script.length; showStep(); return; }
+    const fw = active.el.clientWidth, cw = coach.offsetWidth, ch = coach.offsetHeight;
+    const hx = (P.x + P.w / 2) * T, hy = (H - P.y - P.h) * T;
+    const left = Math.max(4, Math.min(fw - cw - 4, hx - cw / 2));
+    coach.style.transform = `translate(${Math.round(left)}px, ${Math.round(hy - ch - 14)}px)`;
+    coach.style.setProperty("--tail", `${Math.round(hx - left)}px`);
+    const tgt = sc.target?.();
+    if (tgt && tgt.offsetParent) {
+      const fr = active.el.getBoundingClientRect(), r = tgt.getBoundingClientRect();
+      pointer.style.translate = `${Math.round(r.left - fr.left + r.width / 2 - 10)}px ${Math.round(r.top - fr.top - 22)}px`; // transform is taken by the bob animation
+      pointer.classList.remove("hidden");
+    } else pointer.classList.add("hidden");
   }
 
-  /* ---------- reactions ---------- */
-  function jump(v = 9) { if (H.y <= 0.01) { H.vy = v * S; sfx.jump(); } }
-  function heroScreen() { const r = hero.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top }; }
-  function trigger(o, quiet) {
-    o.done = true;
-    const at = heroScreen();
-    switch (o.type) {
-      case "coin":
-        o.el.classList.add("invisible"); if (!quiet) { sfx.coin(); popScore("200", at.x, at.y - 30); } addCoin(); addScore(200);
-        flash(o.anchor.closest("li, article, .px-btn") || o.anchor); break;
-      case "qblock": {
-        if (!quiet) jump(8.5);
-        setTimeout(() => {
-          o.el.classList.remove("is-hit"); void o.el.offsetWidth; o.el.classList.add("is-hit"); o.el.src = SPR("qblock-used");
-          $$("[data-skill]", o.anchor).forEach((li) => revealSkill(li, true));
-          if (!quiet) { sfx.coin(); const r = o.el.getBoundingClientRect(); popScore($("h3", o.anchor)?.textContent || "SKILLS", r.left - 20, r.top - 18); }
-          flash(o.anchor);
-        }, quiet ? 0 : 160);
-        break;
-      }
-      case "bug":
-        if (!quiet) jump(8); o.el.src = SPR("bug-flat"); addScore(100); fixed++; $("#bugs-fixed").textContent = pad(fixed, 2);
-        if (!quiet) { sfx.stomp(); popScore("BUG FIXED", at.x - 30, at.y - 30); } break;
-      case "pipe": if (!quiet) jump(9); break; // hop over it; press down at it to enter
-      case "boss":
-        if (quiet) { o.el.src = SPR("boss-flat"); break; }
-        H.bounces = 3; o.hp = 3; jump(10); toast("BOSS: PROD INCIDENT! STOMPING IT...", 2200); break;
-      case "flag":
-        $(".rw-pennant", o.el).style.bottom = `${S * 1.25}px`; o.el.classList.add("is-done");
-        if (!quiet) { sfx.coin(); addScore(500); popScore("LEVEL CLEAR", at.x - 30, at.y - 30); }
-        flash($("article", o.anchor)); break;
-      case "goal":
-        $(".rw-pennant", o.el).style.bottom = "2px"; if (!goalDone) courseClear(); break;
-      case "dino":
-        o.el.classList.add("hidden"); G.dino = true; dino.classList.remove("hidden");
-        $("[data-npc=dino]")?.classList.add("invisible");
-        if (!quiet) { sfx.oneup(); toast("DINO JOINED YOUR PARTY!"); } break;
-      case "host": if (!quiet) { sfx.coin(); toast("HOST: THANKS FOR PLAYING! LEAVE A MESSAGE AND DIVESH WILL WRITE BACK.", 3800); } break;
-      default: break;
-    }
+  /* ---------- blocks, coins, enemies, boss ---------- */
+  function hitBlock(b) {
+    bumpEl(b.el);
+    if (b.kind === "brick" || b.hits <= 0) { sfx.bump(); return; }
+    b.hits--; popCoin(b.el); sfx.coin(); addCoin(); addScore(200); V.blockCoins++;
+    const r = b.el.getBoundingClientRect(); popScore("200", r.left + r.width / 4, r.top - 20);
+    if (b.hits === 0) setTimeout(() => { $("img", b.el).src = SPR("qblock-used"); b.el.setAttribute("aria-label", "Empty block"); }, 120);
   }
-  // stomp the boss three times: each landing while bouncing is a hit
-  function bossLand() {
-    const b = objs.find((o) => o.type === "boss"); if (!b) return;
-    b.hp--; sfx.stomp(); addScore(1000);
-    b.el.classList.remove("is-hit"); void b.el.offsetWidth; b.el.classList.add("is-hit");
+  stages.forEach((st) => st.blocks.forEach((b) => b.el.addEventListener("click", (e) => { e.stopPropagation(); hitBlock(b); })));
+
+  function addEnemy(kind) {
+    const def = ENEMY[kind], el = document.createElement("img");
+    el.src = SPR(def.frames[0]); el.alt = ""; el.dataset.enemy = kind;
+    el.className = "absolute left-0 top-0 z-[5] cursor-pointer select-none";
+    el.style.cssText += `image-rendering:pixelated;width:var(--tile);height:calc(var(--tile)*${def.aspect})`;
+    el.title = kind === "bug" ? "A bug. Stomp it!" : "Legacy code. Refactor it!";
+    const x = V.outBox ? V.outBox.x - 0.95 : W - 1;
+    const en = { kind, def, el, x, y: 0, w: 0.8, h: def.aspect * 0.9, vx: -(def.speed + Math.random() * 0.5), flat: 0, t: 0 };
+    el.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); begin(); squash(en); });
+    active.layer.append(el); V.enemies.push(en);
+  }
+  function squash(en) {
+    if (en.flat) return;
+    en.flat = 0.7; en.el.src = SPR(en.def.flat); sfx.stomp(); addScore(en.def.points); V.stomps++;
+    fixed++; $("#bugs-fixed").textContent = pad2(fixed);
+    const r = en.el.getBoundingClientRect(); popScore(en.def.label, r.left - 8, r.top - 18);
+    if (fixed === 10) { toast("10 FIXES. SHIP IT!"); fireworks(3); }
+  }
+  const pad2 = (v) => pad(v, 2);
+
+  function spawnBoss() {
+    const el = document.createElement("img");
+    el.src = SPR("boss-1"); el.alt = ""; el.title = "Boss: PROD INCIDENT. Stomp it 3 times!";
+    el.className = "absolute left-0 top-0 z-[6] select-none";
+    el.style.cssText += "image-rendering:pixelated;width:calc(var(--tile)*2);height:calc(var(--tile)*1.75)";
+    V.boss = { el, x: W * 0.6, y: 0, w: 1.6, h: 1.5, vx: -1.3, hp: 3, inv: 0, t: 0, down: 0 };
+    active.layer.append(el); paintBossHp();
+  }
+  function paintBossHp() {
+    const hp = $("[data-boss-hp]"); if (!hp) return;
+    hp.innerHTML = [0, 1, 2].map((i) => `<i class="inline-block h-3 w-3 border-2 border-ink ${i < (V.boss?.hp ?? 0) ? "bg-mario" : "bg-white/20"}"></i>`).join("");
+  }
+  function stompBoss() {
+    const b = V.boss; b.hp--; b.inv = 0.9; sfx.stomp(); addScore(1000); paintBossHp();
     const r = b.el.getBoundingClientRect(); popScore(b.hp ? "HIT!" : "INCIDENT RESOLVED", r.left, r.top - 20);
-    if (b.hp > 0) { H.vy = 10 * S; } else { b.el.src = SPR("boss-flat"); fireworks(4); sfx.flag(); toast("BOSS DEFEATED! +5000"); addScore(5000); }
-  }
-  function nearPipe() {
-    return objs.find((o) => o.type === "pipe" && Math.abs(heroX + S / 2 - (o.sx + o.w / 2)) < S * 1.4);
-  }
-  function enterPipe(o) {
-    const card = o.anchor, btn = $("[data-map]", card);
-    sfx.pipe(); flash(card);
-    if (btn) btn.click(); else card.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!b.hp) {
+      G.bossDown = true; b.down = 1; b.el.src = SPR("boss-flat"); fireworks(5); sfx.flag();
+      toast("BOSS DEFEATED! +5000"); addScore(5000);
+    }
   }
 
-  /* ---------- input: scroll is the main control ---------- */
-  const held = { left: false, right: false };
+  function hurtHero(fromX, msg) {
+    P.hurt = 1.2; P.vx = (P.x < fromX ? -1 : 1) * 5; P.vy = 7; P.ground = false;
+    hero.classList.remove("is-hurt"); void hero.offsetWidth; hero.classList.add("is-hurt");
+    sfx.hurt(); toast(msg);
+  }
+
+  /* ---------- warps ---------- */
+  function warpTo(next) {
+    if (warping || !next) return;
+    warping = 0.7; hero.style.zIndex = "5"; sfx.pipe(); begin();
+    setTimeout(() => {
+      next.el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+      toast(`WORLD ${next.name}`);
+      setTimeout(() => { if (active !== next) enterStage(next); next.el.focus({ preventScroll: true }); }, 900);
+    }, 650);
+  }
+  stages.forEach((st) => st.out?.addEventListener("pointerdown", (e) => { e.stopPropagation(); if (active === st) warpTo(st.next); }));
+
+  /* ---------- input ---------- */
+  function begin() {
+    if (!G.started) { G.started = true; everPlayed = true; }
+    if (TOUCH) padEl.classList.remove("hidden");
+  }
+  stages.forEach((st) => st.el.addEventListener("pointerdown", (e) => {
+    if (active !== st) enterStage(st);
+    st.el.focus({ preventScroll: true }); begin();
+    if (e.target.closest("[data-block], [data-pipe], #p2, [data-enemy], #flagpole, [data-npc]")) return;
+    const fr = st.el.getBoundingClientRect();
+    target = (e.clientX - fr.left) / T;
+    if ((fr.bottom - e.clientY) / T > P.y + P.h + 0.4) tapJump = 0.3;
+  }));
+  const KEYMAP = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "jump", ArrowUp: "jump", KeyW: "jump", ArrowDown: "down", KeyS: "down" };
+  const playing = () => document.activeElement?.hasAttribute?.("data-stage");
   addEventListener("keydown", (e) => {
-    if (e.target.closest?.("input, textarea, dialog, [contenteditable]") || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.code === "ArrowRight" || e.code === "KeyD") { held.right = true; e.preventDefault(); }
-    else if (e.code === "ArrowLeft" || e.code === "KeyA") { held.left = true; e.preventDefault(); }
-    else if (e.code === "ArrowUp" || e.code === "KeyW") { jump(); e.preventDefault(); }
-    else if ((e.code === "ArrowDown" || e.code === "KeyS") && nearPipe()) { enterPipe(nearPipe()); e.preventDefault(); }
+    const k = KEYMAP[e.code]; if (!k || !playing()) return;
+    if (document.activeElement !== active?.el) enterStage(stages.find((st) => st.el === document.activeElement));
+    e.preventDefault(); keys[k] = true; begin();
   });
-  addEventListener("keyup", (e) => {
-    if (e.code === "ArrowRight" || e.code === "KeyD") held.right = false;
-    if (e.code === "ArrowLeft" || e.code === "KeyA") held.left = false;
+  addEventListener("keyup", (e) => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+  addEventListener("blur", () => { keys.left = keys.right = keys.jump = keys.down = false; });
+  $$("[data-pad]").forEach((btn) => {
+    const k = btn.dataset.pad;
+    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[k] = true; begin(); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => btn.addEventListener(ev, () => { keys[k] = false; }));
   });
-  addEventListener("blur", () => { held.left = held.right = false; });
-  runway.addEventListener("pointerdown", (e) => { if (!e.target.closest("button, .pipe")) jump(); });
 
-  const setHidden = (off) => { document.body.classList.toggle("rw-off", off); $("#rw-show").classList.toggle("hidden", !off); store.set("sdb-rw-off", off); };
-  $("#rw-hide").addEventListener("click", () => setHidden(true));
-  $("#rw-show").addEventListener("click", () => setHidden(false));
-  setHidden(store.get("sdb-rw-off", false));
+  // Player 2 cheers you on in 1-1
+  const p2 = $("#p2"), p2img = $("img", p2);
+  const P2_LINES = ["PLAYER 2: RACE YOU TO THE FLAG!", "PLAYER 2: I'VE GOT THE ON-CALL PAGER.", "PLAYER 2: SHIP IT!", "PLAYER 2: THE DINO IS IN WORLD 1-2."];
+  let p2Line = 0;
+  p2.addEventListener("click", (e) => { e.stopPropagation(); hop(p2, p2img, "hero2"); sfx.jump(); toast(P2_LINES[p2Line++ % P2_LINES.length]); });
+  if (!reducedMotion) setInterval(() => { if (active?.name === "1-1" && stageVisible && !document.hidden) hop(p2, p2img, "hero2"); }, 5200);
 
-  /* ---------- loop ---------- */
-  let lastSec = null;
-  function frame(now) {
-    const dt = Math.min(0.033, (now - (frame.last || now)) / 1000); frame.last = now;
-    if (held.right || held.left) scrollBy({ top: (held.right ? 1 : -1) * 520 * dt, behavior: "instant" });
-    const target = worldAt(scrollY);
-    if (shownO === null) shownO = target;
-    const prev = shownO;
-    const jumpBig = Math.abs(target - shownO) > innerWidth * 1.5; // nav click: skip the in-between quietly
-    shownO = jumpBig ? target : shownO + (target - shownO) * Math.min(1, dt * 10);
-    speed = speed * 0.8 + ((shownO - prev) / Math.max(dt, 0.001)) * 0.2;
-    if (Math.abs(shownO - prev) > 0.2) H.face = shownO > prev ? 1 : -1;
+  /* ---------- physics: tile units, y grows up from the stage floor ---------- */
+  const overlapX = (r) => P.x + P.w > r.x + 0.02 && P.x < r.x + r.w - 0.02;
+  const overlapY = (r) => P.y + P.h > r.y + 0.02 && P.y < r.y + r.h - 0.02;
+  const touches = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  const NIGHT_G = { x: 1, y: 3, shy: false, t: 0 };
 
-    // objects that reached the hero this frame
-    // an object reaches the hero when the world offset passes its position
-    for (const o of objs) if (!o.done && prev < o.wx && shownO >= o.wx) trigger(o, jumpBig);
-    // hero vertical physics
-    if (H.y > 0 || H.vy > 0) {
-      H.vy -= 34 * S * dt; H.y += H.vy * dt;
-      if (H.y <= 0) { H.y = 0; H.vy = 0; if (H.bounces > 0) { H.bounces--; bossLand(); } }
-    }
-    // draw
-    const W = runway.clientWidth;
-    for (const o of objs) {
-      o.sx = heroX + (o.wx - shownO) - o.w / 2 + S / 2 + (o.type === "host" ? S * 2.2 : 0);
-      const vis = o.sx > -o.w - 20 && o.sx < W + 20;
-      o.el.style.display = vis ? "" : "none";
-      if (!vis) continue;
-      o.el.style.transform = `translateX(${Math.round(o.sx)}px)`;
-      if (o.type === "bug" && !o.done) { const f = SPR(Math.floor(now / 220) % 2 ? "bug-1" : "bug-2"); if (!o.el.src.endsWith(f)) o.el.src = f; }
-      if (o.type === "boss" && !o.el.src.endsWith("boss-flat.svg")) { const f = SPR(Math.floor(now / 260) % 2 ? "boss-1" : "boss-2"); if (!o.el.src.endsWith(f)) o.el.src = f; }
-    }
-    $(".rw-ground", runway).style.backgroundPositionX = `${-Math.round(shownO)}px`;
+  function step(dt) {
+    if (emerging > 0) { emerging -= dt; P.y += (1 / 0.55) * dt * P.h; if (emerging <= 0) { P.y = V.inBox.y + V.inBox.h; hero.style.zIndex = ""; } return; }
+    if (warping) { P.y -= 1.6 * dt; P.vx = 0; return; }
 
-    let f = "hero-idle";
-    if (H.y > 0.01) f = "hero-jump";
-    else if (Math.abs(speed) > 20) { H.walkT += dt * Math.min(12, Math.abs(speed) / 40); f = Math.floor(H.walkT) % 2 ? "hero-walk1" : "hero-walk2"; }
-    if (!hero.src.endsWith(SPR(f))) hero.src = SPR(f);
-    hero.style.transform = `translate(${heroX}px, ${Math.round(runway.clientHeight - S - S - H.y)}px) scaleX(${H.face})`;
-    trail.push({ y: H.y, face: H.face }); if (trail.length > 10) trail.shift();
-    if (G.dino) {
-      const t = trail[0];
-      dino.style.transform = `translate(${heroX - H.face * S * 1.15}px, ${Math.round(runway.clientHeight - S - S - t.y)}px) scaleX(${t.face})`;
+    // down on the exit pipe warps to the next world
+    const op = V.outBox;
+    if (keys.down && P.ground && op && Math.abs(P.y - (op.y + op.h)) < 0.05 && P.x + P.w / 2 > op.x && P.x + P.w / 2 < op.x + op.w) {
+      P.x = op.x + (op.w - P.w) / 2; warpTo(active.next); return;
     }
 
-    // which world are we in?
-    const mid = scrollY + innerHeight * 0.45;
-    const sec = $$("main > section").find((el) => mid >= el.offsetTop && mid < el.offsetTop + el.offsetHeight) || $("#contact");
-    if (sec.id !== lastSec && SECTIONS[sec.id]) {
-      lastSec = sec.id; const info = SECTIONS[sec.id];
-      runway.dataset.theme = info.theme; worldLabel.textContent = info.name; tipLabel.textContent = info.tip;
+    let dir = P.hurt > 0.9 ? 0 : (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    if (dir) target = null;
+    else if (target !== null && P.hurt < 0.9) {
+      const d = target - (P.x + P.w / 2);
+      if (Math.abs(d) < 0.2 || (P.x <= 0 && d < 0) || (P.x >= W - P.w && d > 0)) target = null; else dir = Math.sign(d);
     }
-    const pipe = nearPipe();
-    tipLabel.classList.toggle("!block", !!pipe); worldLabel.classList.toggle("max-sm:hidden", !!pipe); // phones: show the pipe hint in place of the world name
-    if (pipe) tipLabel.textContent = TOUCH ? `TAP THE PIPE: ${$("h3", pipe.anchor)?.textContent || "PROJECT"}` : `↓ ENTER: ${$("h3", pipe.anchor)?.textContent || "PROJECT"}`;
-    else if (lastSec && tipLabel.textContent.match(/^(↓ ENTER|TAP THE PIPE)/)) tipLabel.textContent = SECTIONS[lastSec].tip;
-    requestAnimationFrame(frame);
+    const accel = P.ground ? 40 : 24, maxV = 6;
+    if (dir) { P.vx += dir * accel * dt; P.face = dir; } else { P.vx *= P.ground ? 0.78 : 0.96; if (Math.abs(P.vx) < 0.05) P.vx = 0; }
+    P.vx = Math.max(-maxV, Math.min(maxV, P.vx));
+    P.hurt = Math.max(0, P.hurt - dt);
+    if (Math.abs(P.vx) > 1) V.moved = true;
+
+    const pressed = (keys.jump && !lastJump) || tapJump > 0;
+    if (pressed && (P.ground || (G.dino && P.jumps === 1))) {
+      P.vy = P.ground ? 13.5 : 11.5; P.jumps = P.ground ? 1 : 2; P.ground = false; tapJump = 0; sfx.jump(); V.moved = true;
+    }
+    const holding = keys.jump || tapJump > 0;
+    tapJump = Math.max(0, tapJump - dt);
+    if (!holding && P.vy > 4 && !P.hurt) P.vy = 4; // variable jump height
+    lastJump = keys.jump;
+    P.vy -= (P.vy > 0 && holding ? 30 : 48) * dt;
+
+    P.x = Math.max(0, Math.min(W - P.w, P.x + P.vx * dt));
+    for (const r of rects) if (overlapX(r) && overlapY(r)) { P.x = P.vx > 0 ? r.x - P.w : r.x + r.w; P.vx = 0; }
+
+    P.y += P.vy * dt; P.ground = false;
+    if (P.y <= 0) { P.y = 0; P.vy = 0; P.ground = true; }
+    for (const r of rects) {
+      if (!overlapX(r) || !overlapY(r)) continue;
+      if (P.vy > 0) {
+        P.y = r.y - P.h; P.vy = 0;
+        const head = rects.filter((q) => q.el.dataset.block && overlapX(q) && Math.abs(q.y - (P.y + P.h)) < 0.05)
+          .sort((a, b) => Math.abs(a.x + a.w / 2 - (P.x + P.w / 2)) - Math.abs(b.x + b.w / 2 - (P.x + P.w / 2)))[0];
+        const b = head && active.blocks.find((k) => k.el === head.el);
+        if (b) hitBlock(b);
+      } else { P.y = r.y + r.h; P.vy = 0; P.ground = true; }
+    }
+    if (P.ground) P.jumps = 0;
+    if (P.y > H) P.y = H;
+    const hb = { x: P.x + 0.1, y: P.y, w: P.w - 0.2, h: P.h - 0.1 };
+
+    // coins
+    for (const c of active.coins) {
+      if (c.got || !touches(hb, c)) continue;
+      c.got = true; c.el.classList.add("hidden"); sfx.coin(); addCoin(); addScore(200);
+      const r = c.el.getBoundingClientRect(); popScore("200", r.left, r.top - 16);
+    }
+    // characters you can meet
+    for (const npc of V.npcs || []) {
+      if (!touches(hb, npc)) continue;
+      const kind = npc.el.dataset.npc;
+      if (kind === "dino" && !G.dino) {
+        G.dino = true; npc.el.classList.add("hidden"); follower.classList.remove("hidden"); sfx.oneup();
+        toast("DINO JOINED YOUR PARTY! DOUBLE JUMP UNLOCKED"); measure();
+      } else if (kind === "host" && !V.host) {
+        V.host = true; sfx.coin(); hop(npc.el, npc.el, "host-noop");
+        toast("HOST: WELCOME! DIVESH WILL WRITE BACK. USE THE FORM BELOW.", 3600);
+      }
+    }
+    // goal + castle door
+    if (V.goal && !goalDone && touches(hb, V.goal)) courseClear();
+    if (V.door && goalDone && touches(hb, V.door) && !warping) { warping = 0; warpTo(active.next); }
+
+    // enemies crawl out of the exit pipe and walk left
+    if (active.kinds.length && !reducedMotion && (V.nextEnemy -= dt) <= 0 && V.enemies.length < 3) {
+      addEnemy(active.kinds[Math.floor(Math.random() * active.kinds.length)]); V.nextEnemy = 3 + Math.random() * 4;
+    }
+    for (const en of V.enemies) {
+      if (en.flat) { en.flat -= dt; continue; }
+      en.x += en.vx * dt; en.t += dt;
+      if (!touches(hb, en)) continue;
+      if (P.vy < 0 && P.y > en.y + en.h * 0.35) { squash(en); P.vy = 9; P.ground = false; P.jumps = 1; }
+      else if (!P.hurt) hurtHero(en.x + en.w / 2, en.kind === "bug" ? "A BUG GOT TO PROD! STOMP IT FROM ABOVE" : "LEGACY CODE BIT BACK! STOMP IT FROM ABOVE");
+    }
+    V.enemies = V.enemies.filter((en) => { const keep = en.x > -1.2 && (!en.flat || en.flat > 0); if (!keep) en.el.remove(); return keep; });
+
+    // boss patrols the arena
+    const B = V.boss;
+    if (B && !B.down) {
+      B.t += dt; B.inv = Math.max(0, B.inv - dt);
+      B.x += B.vx * dt * (B.hp === 1 ? 1.8 : 1);
+      if (B.x < W * 0.3) B.vx = Math.abs(B.vx); if (B.x > W * 0.78) B.vx = -Math.abs(B.vx);
+      if (touches(hb, B)) {
+        if (P.vy < 0 && P.y > B.y + B.h * 0.4 && !B.inv) { stompBoss(); P.vy = 11; P.ground = false; P.jumps = 1; }
+        else if (!P.hurt && !B.inv) hurtHero(B.x + B.w / 2, "THE INCIDENT ESCALATED! STOMP IT FROM ABOVE");
+      }
+    }
+
+    // night ghost
+    if (night) {
+      NIGHT_G.t += dt;
+      const toHero = Math.sign(P.x - NIGHT_G.x) || 1;
+      NIGHT_G.shy = P.face === -toHero;
+      if (!NIGHT_G.shy) { NIGHT_G.x += toHero * 1.1 * dt; NIGHT_G.y += (Math.min(H - 1.2, P.y + 1.5) - NIGHT_G.y) * 0.6 * dt; }
+    }
+    trail.push({ x: P.x, y: P.y, face: P.face }); if (trail.length > 24) trail.shift();
   }
-  ["hero-walk1", "hero-walk2", "hero-jump", "qblock-used", "bug-2", "bug-flat", "boss-2", "boss-flat", "dino", "castle", "host", "hero2-idle"]
+
+  function render(dt) {
+    let frame = "hero-idle";
+    if (!P.ground && !emerging) frame = "hero-jump";
+    else if (Math.abs(P.vx) > 0.3) { walkT += dt * Math.abs(P.vx) * 2.2; frame = Math.floor(walkT) % 2 ? "hero-walk1" : "hero-walk2"; }
+    const src = SPR(frame);
+    if (!hero.src.endsWith(src)) hero.src = src;
+    hero.style.transform = `translate(${Math.round((P.x - (1 - P.w) / 2) * T)}px, ${Math.round((H - P.y - P.h) * T)}px) scaleX(${P.face})`;
+    if (G.dino && trail.length) {
+      const f = trail[0], fx = f.x - f.face * 1.1;
+      follower.style.transform = `translate(${Math.round(Math.max(0, fx) * T)}px, ${Math.round((H - f.y - 1) * T)}px) scaleX(${f.face})`;
+    }
+    for (const en of V.enemies) {
+      if (!en.flat) { const f = SPR(en.def.frames[Math.floor(en.t * 5) % 2]); if (!en.el.src.endsWith(f)) en.el.src = f; }
+      en.el.style.transform = `translate(${Math.round((en.x - 0.1) * T)}px, ${Math.round((H - en.y - en.def.aspect) * T)}px)`;
+    }
+    const B = V.boss;
+    if (B) {
+      if (!B.down) { const f = SPR(Math.floor(B.t * 4) % 2 ? "boss-1" : "boss-2"); if (!B.el.src.endsWith(f)) B.el.src = f; }
+      B.el.style.opacity = B.inv && Math.floor(B.inv * 10) % 2 ? ".4" : "1";
+      B.el.style.transform = `translate(${Math.round((B.x - 0.2) * T)}px, ${Math.round((H - 1.75) * T)}px) scaleX(${B.vx > 0 ? -1 : 1})`;
+    }
+    placeCoach(dt);
+    if (night) {
+      const g = SPR(NIGHT_G.shy ? "ghost-shy" : "ghost");
+      if (!ghost.src.endsWith(g)) ghost.src = g;
+      ghost.style.transform = `translate(${Math.round(NIGHT_G.x * T)}px, ${Math.round((H - NIGHT_G.y - 1) * T + Math.sin(NIGHT_G.t * 3) * 3)}px) scaleX(${P.x > NIGHT_G.x ? 1 : -1})`;
+    }
+  }
+
+  // the hero follows you: whichever stage is most on screen becomes active
+  const ratios = new Map();
+  let stageVisible = true;
+  const stageObs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => ratios.set(e.target, e.intersectionRatio));
+    let best = null, bestR = 0;
+    stages.forEach((st) => { const r = ratios.get(st.el) || 0; if (r > bestR) { best = st; bestR = r; } });
+    stageVisible = bestR > 0;
+    if (best && bestR >= 0.35 && best !== active && !warping) enterStage(best);
+    if (TOUCH) padEl.classList.toggle("hidden", !(G.started && stageVisible));
+  }, { threshold: [0, 0.2, 0.35, 0.5, 0.75, 1] });
+  stages.forEach((st) => stageObs.observe(st.el));
+
+  function loop(now) {
+    const dt = Math.min(0.033, (now - (loop.last || now)) / 1000); loop.last = now;
+    if (active && stageVisible) { step(dt); render(dt); }
+    requestAnimationFrame(loop);
+  }
+  ["hero-walk1", "hero-walk2", "hero-jump", "hero2-jump", "qblock-used", "bug-2", "bug-flat", "turtle-1", "turtle-2", "shell", "ghost-shy", "boss-2", "boss-flat", "dino"]
     .forEach((n) => { new Image().src = SPR(n); });
-  let rebuildT;
-  const rebuild = () => { clearTimeout(rebuildT); rebuildT = setTimeout(build, 150); };
-  new ResizeObserver(rebuild).observe(document.body);
-  (document.fonts?.ready ?? Promise.resolve()).then(() => { build(); requestAnimationFrame(frame); });
+  addEventListener("resize", () => { const ox = P.x / (W || 1); measure(); P.x = ox * W; });
+  (document.fonts?.ready ?? Promise.resolve()).then(() => { enterStage(stages[0]); requestAnimationFrame(loop); });
 
   /* ================= recruiter brief ================= */
   const brief = $("#brief");

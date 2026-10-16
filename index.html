@@ -99,20 +99,38 @@
         </div>
         <button type="button" id="brief-open" class="mt-6 border-b-2 border-dashed border-white pb-1 font-pixel text-px-xs text-white hover:border-coin hover:text-coin" style="text-shadow:2px 2px 0 #000">RECRUITER? READ THE 30-SECOND VERSION</button>
         <p class="mt-5 font-pixel text-px-xs text-white" style="text-shadow:2px 2px 0 #000">TOP- <span id="top-score">000000</span> · BUGS FIXED <span id="bugs-fixed">00</span></p>
-        <p class="mt-6 animate-blink font-pixel text-px-xs text-cream" style="text-shadow:2px 2px 0 #000">▼ SCROLL TO RUN THE LEVEL ▼</p>
       </div>
 
-      <div class="relative mt-10 h-[calc(var(--tile)*2.5)]" aria-hidden="true">
-        <img src="assets/sprites/hill.svg" alt="" class="sprite absolute bottom-0 left-[2%] w-[calc(var(--tile)*5)]" />
-        <img src="assets/sprites/bush.svg" alt="" class="sprite absolute bottom-0 left-[30%] hidden w-[calc(var(--tile)*3)] sm:block" />
-        <img src="assets/sprites/bush.svg" alt="" class="sprite absolute bottom-0 right-[24%] w-[calc(var(--tile)*2)] sm:w-[calc(var(--tile)*3)]" />
-        <div class="pipe absolute bottom-0 right-[6%] h-[calc(var(--tile)*2)]"></div>
+      <!-- playfield: bugs crawl out of the pipe; stomp them -->
+      <div id="field" data-stage="1-1" data-enemies="bug,turtle" tabindex="0" role="application" aria-roledescription="mini game"
+           aria-label="Playfield. Arrow keys run, space jumps. Stomp the bugs crawling out of the pipe, and hit the question blocks from below for coins."
+           class="relative mt-6 h-[calc(var(--tile)*7)] cursor-pointer outline-none [touch-action:manipulation]">
+        <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[18%] w-20 animate-drift sm:w-28" />
+        <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[40%] w-16 animate-drift [animation-delay:-55s] sm:w-24" />
+        <img src="assets/sprites/hill.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[2%] w-[calc(var(--tile)*5)]" />
+        <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[22%] hidden w-[calc(var(--tile)*3)] sm:block" />
+        <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 right-[22%] w-[calc(var(--tile)*2)] sm:w-[calc(var(--tile)*3)]" />
+        <button type="button" id="p2" class="absolute bottom-0 left-[9%] z-10 h-[var(--tile)] w-[var(--tile)]" aria-label="Player 2"><img src="assets/sprites/hero2-idle.svg" alt="" class="sprite h-full w-full" /></button>
+        <div class="pipe absolute bottom-0 right-[6%] z-10 h-[calc(var(--tile)*2)]" data-solid data-pipe="out" title="Warp pipe to World 1-2: stand on it and press down, or tap it" aria-hidden="true"></div>
+
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% - var(--tile)*2.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% - var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="multi" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" style="left:calc(50% + var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% + var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+
+        <img id="ghost" src="assets/sprites/ghost.svg" alt="" aria-hidden="true" class="sprite absolute left-0 top-0 z-[15] hidden h-[var(--tile)] w-[var(--tile)]" />
+        <img id="hero" src="assets/sprites/hero-idle.svg" alt="Divesh, pixel-art avatar" class="sprite absolute left-0 top-0 z-20 h-[var(--tile)] w-[var(--tile)] will-change-transform" />
+
+        <div id="coach" class="coach" role="status" aria-live="polite"></div>
+        <div id="pointer" class="pointer-arrow hidden" aria-hidden="true"></div>
       </div>
+
       <div class="tile-ground h-[calc(var(--tile)*2)]" aria-hidden="true"></div>
     </section>
 
     <!-- ===================== WORLD 1-2 · STATUS ===================== -->
-    <section id="about" data-world="1-2" class="bg-night py-20 text-white sm:py-28">
+    <section id="about" data-world="1-2" class="bg-night pt-20 text-white sm:pt-28">
       <div class="mx-auto max-w-6xl px-4">
         <p class="px-kicker">World 1-2 · The Power-Up</p>
         <h2 class="px-heading mt-4">PLAYER STATUS</h2>
@@ -124,7 +142,7 @@
               <div class="relative shrink-0">
                 <div class="flex items-end">
                   <img src="assets/sprites/hero-idle.svg" alt="" class="sprite h-24 w-24 animate-bob sm:h-32 sm:w-32" />
-                  <img data-npc="dino" src="assets/sprites/dino.svg" alt="" title="Your sidekick. Walk into it in the game." class="sprite h-20 w-20 animate-bob [animation-delay:-.8s] sm:h-24 sm:w-24" />
+                  <img src="assets/sprites/dino.svg" alt="" class="sprite h-20 w-20 animate-bob [animation-delay:-.8s] sm:h-24 sm:w-24" />
                 </div>
                 <div class="tile-brick h-4 w-44 [--tile:16px] sm:h-8 sm:w-56 sm:[--tile:32px]" aria-hidden="true"></div>
               </div>
@@ -180,6 +198,16 @@
           </div>
         </div>
       </div>
+
+      <div data-stage="1-2" data-enemies="bug" tabindex="0" role="application" aria-roledescription="mini game" aria-label="World 1-2 playfield: meet the dino" class="stage relative mt-20 h-[calc(var(--tile)*5)] cursor-pointer outline-none">
+        <img src="assets/sprites/hill.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[12%] w-[calc(var(--tile)*4)] opacity-60" />
+        <div class="pipe absolute bottom-0 left-[3%] z-10 h-[calc(var(--tile)*1.5)]" data-solid data-pipe="in" aria-hidden="true"></div>
+        <img data-npc="dino" src="assets/sprites/dino.svg" alt="Dino sidekick" title="Walk into the dino to recruit it" class="sprite absolute bottom-0 left-[34%] h-[var(--tile)] w-[var(--tile)] animate-bob" />
+        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(48%);bottom:calc(var(--tile)*2.6)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(58% + var(--tile)*0);bottom:calc(var(--tile)*2.6)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(58% + var(--tile)*1);bottom:calc(var(--tile)*2.6)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(58% + var(--tile)*2);bottom:calc(var(--tile)*2.6)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(58% + var(--tile)*3);bottom:calc(var(--tile)*2.6)" />
+        <div class="pipe absolute bottom-0 right-[3%] z-10 h-[calc(var(--tile)*2)]" data-solid data-pipe="out" title="Warp pipe to World 1-3" aria-hidden="true"></div>
+      </div>
+      <div class="tile-ground h-[var(--tile)]" aria-hidden="true"></div>
     </section>
 
     <!-- ===================== WORLD 1-3 · UNDERGROUND SKILLS ===================== -->
@@ -192,11 +220,18 @@
         <p class="mt-3 font-pixel text-px-xs text-white/60"><span id="sk-found" class="text-coin">0</span>/<span id="sk-total">0</span> FOUND · <button type="button" id="sk-all" class="underline decoration-2 underline-offset-4 hover:text-coin">REVEAL ALL</button></p>
         <div id="skill-groups" class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
       </div>
+      <div data-stage="1-3" data-enemies="bug,turtle" tabindex="0" role="application" aria-roledescription="mini game" aria-label="World 1-3 playfield: underground coins" class="stage relative h-[calc(var(--tile)*5)] cursor-pointer outline-none">
+        <div class="pipe absolute bottom-0 left-[3%] z-10 h-[calc(var(--tile)*1.5)]" data-solid data-pipe="in" aria-hidden="true"></div>
+        <div class="tile-brick-blue absolute bottom-[calc(var(--tile)*2)] left-[36%] h-[var(--tile)] w-[calc(var(--tile)*3)]" data-solid aria-hidden="true"></div>
+        <div class="tile-brick-blue absolute bottom-0 left-[22%] h-[var(--tile)] w-[var(--tile)]" data-solid aria-hidden="true"></div>
+        <img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(38% + var(--tile)*0);bottom:calc(var(--tile)*3.1)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(38% + var(--tile)*1);bottom:calc(var(--tile)*3.1)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(38% + var(--tile)*2);bottom:calc(var(--tile)*3.1)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(62% + var(--tile)*0);bottom:calc(var(--tile)*.3)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(62% + var(--tile)*1);bottom:calc(var(--tile)*.3)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(62% + var(--tile)*2);bottom:calc(var(--tile)*.3)" /><img data-coin src="assets/sprites/coin.svg" alt="" class="sprite absolute h-[calc(var(--tile)*.75)] w-[calc(var(--tile)*.43)]" style="left:calc(62% + var(--tile)*3);bottom:calc(var(--tile)*.3)" />
+        <div class="pipe absolute bottom-0 right-[3%] z-10 h-[calc(var(--tile)*2)]" data-solid data-pipe="out" title="Warp pipe to World 1-4" aria-hidden="true"></div>
+      </div>
       <div class="tile-brick-blue h-[var(--tile)]" aria-hidden="true"></div>
     </section>
 
     <!-- ===================== WORLD 1-4 · LEVEL SELECT ===================== -->
-    <section id="projects" data-world="1-4" class="relative overflow-hidden bg-cream py-20 sm:py-28"
+    <section id="projects" data-world="1-4" class="relative overflow-hidden bg-cream pt-20 sm:pt-28"
              style="background-image:linear-gradient(#0000000f 2px,transparent 2px),linear-gradient(90deg,#0000000f 2px,transparent 2px);background-size:var(--tile) var(--tile)">
       <div class="mx-auto max-w-6xl px-4">
         <p class="px-kicker !text-brick ![text-shadow:none]">World 1-4 · Level Select</p>
@@ -219,6 +254,17 @@
         <div id="side-quests" class="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
       </div>
 
+      <div class="mt-24 bg-[#141414] pt-6">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 font-pixel text-px-xs text-white">
+          <span>BOSS · PROD INCIDENT</span><span class="flex items-center gap-2">HP <span data-boss-hp class="flex gap-1"></span></span>
+        </div>
+        <div data-stage="1-4" data-boss tabindex="0" role="application" aria-roledescription="mini game" aria-label="World 1-4 playfield: boss fight" class="stage relative h-[calc(var(--tile)*5)] cursor-pointer outline-none">
+          <div class="pipe absolute bottom-0 left-[3%] z-10 h-[calc(var(--tile)*1.5)]" data-solid data-pipe="in" aria-hidden="true"></div>
+          <div class="tile-brick absolute bottom-[calc(var(--tile)*2.5)] left-[18%] h-[calc(var(--tile)*.5)] w-[calc(var(--tile)*2)] [--tile:inherit]" data-solid aria-hidden="true"></div>
+          <div class="pipe absolute bottom-0 right-[3%] z-10 h-[calc(var(--tile)*2)]" data-solid data-pipe="out" title="Warp pipe to World 1-5" aria-hidden="true"></div>
+        </div>
+        <div class="h-[var(--tile)] bg-[#5a5a5a]" style="background-image:linear-gradient(#000 3px,transparent 3px),linear-gradient(90deg,#000 3px,transparent 3px);background-size:var(--tile) calc(var(--tile)/2)" aria-hidden="true"></div>
+      </div>
     </section>
 
     <!-- ===================== WORLD 1-5 · PROGRESS ===================== -->
@@ -238,7 +284,7 @@
         <ol class="relative space-y-12 pb-12" id="timeline"></ol>
 
         <!-- start pipe + goal (flagpole and castle) -->
-        <div class="relative h-[calc(var(--tile)*6)]">
+        <div data-stage="1-5" tabindex="0" role="application" aria-roledescription="mini game" aria-label="World 1-5 playfield: reach the flagpole" class="stage relative h-[calc(var(--tile)*6)] cursor-pointer outline-none">
           <div class="pipe absolute bottom-0 left-[16px] z-10 h-[calc(var(--tile)*2)] md:left-1/2 md:-translate-x-1/2" data-solid data-pipe="in" aria-hidden="true"></div>
           <p class="absolute bottom-[calc(var(--tile)*2+16px)] left-[calc(16px+var(--tile)*2)] font-pixel text-px-xs text-white md:left-[calc(50%+var(--tile)*1.25)]" style="text-shadow:2px 2px 0 #000">START · 2020</p>
 
@@ -264,11 +310,13 @@
         <p class="px-kicker text-center">World 8-4 · Mushroom House</p>
         <h2 class="px-heading mt-4 text-center">CONTINUE?</h2>
 
-        <div class="mt-12 flex items-end justify-center gap-6">
-          <img src="assets/sprites/coin.svg" alt="" aria-hidden="true" class="sprite mb-4 h-7 w-4 animate-bob" />
-          <img data-npc="host" src="assets/sprites/host.svg" alt="Mushroom host" class="sprite h-24 w-24" />
-          <img src="assets/sprites/coin.svg" alt="" aria-hidden="true" class="sprite mb-4 h-7 w-4 animate-bob [animation-delay:-.8s]" />
+        <div data-stage="8-4" tabindex="0" role="application" aria-roledescription="mini game" aria-label="World 8-4 playfield: the mushroom house" class="stage relative mt-10 h-[calc(var(--tile)*4)] cursor-pointer outline-none">
+          <div class="pipe absolute bottom-0 left-0 z-10 h-[calc(var(--tile)*1.5)]" data-solid data-pipe="in" aria-hidden="true"></div>
+          <img src="assets/sprites/coin.svg" alt="" aria-hidden="true" class="sprite absolute bottom-[calc(var(--tile)*1.6)] left-[40%] h-7 w-4 animate-bob" />
+          <img data-npc="host" src="assets/sprites/host.svg" alt="Mushroom host" title="Walk up to the host" class="sprite absolute bottom-0 left-[55%] h-[calc(var(--tile)*1.5)] w-[calc(var(--tile)*1.5)]" />
+          <img src="assets/sprites/coin.svg" alt="" aria-hidden="true" class="sprite absolute bottom-[calc(var(--tile)*1.6)] left-[78%] h-7 w-4 animate-bob [animation-delay:-.8s]" />
         </div>
+        <div class="tile-brick h-[calc(var(--tile)/2)] [--tile:32px]" aria-hidden="true"></div>
         <div class="px-panel mt-6 p-6 sm:p-8">
           <p class="min-h-[4.5em] font-pixel text-px-xs leading-6 sm:text-px-sm sm:leading-7" id="dialog"
              data-text="THANK YOU FOR PLAYING! DIVESH IS OPEN TO SDE, AI ENGINEER AND DATA ENGINEER ROLES AND CAN JOIN IMMEDIATELY. LEAVE A MESSAGE AND HEAR BACK SOON.">THANK YOU FOR PLAYING! DIVESH IS OPEN TO SDE, AI ENGINEER AND DATA ENGINEER ROLES AND CAN JOIN IMMEDIATELY. LEAVE A MESSAGE AND HEAR BACK SOON.</p>
@@ -306,8 +354,14 @@
     </div>
   </footer>
 
+  <!-- scroll walker: the avatar walks toward the castle as you scroll -->
+  <div class="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-7" aria-hidden="true">
+    <div class="absolute inset-x-0 bottom-0 h-1 bg-ink/25"></div>
+    <img id="walker" src="assets/sprites/hero-idle.svg" alt="" class="sprite absolute bottom-1 left-0 h-6 w-6" />
+    <img src="assets/sprites/castle.svg" alt="" class="sprite absolute bottom-1 right-2 h-6 w-6" />
+  </div>
 
-  <a href="#start" id="to-top" class="px-btn fixed bottom-[calc(var(--s)*4.5+16px)] right-4 z-30 translate-y-24 bg-luigi px-3 py-3 text-px-xs text-white opacity-0 transition-[transform,opacity] [&.is-shown]:translate-y-0 [&.is-shown]:opacity-100" aria-label="Back to top">TOP</a>
+  <a href="#start" id="to-top" class="px-btn fixed bottom-10 right-4 z-30 translate-y-24 bg-luigi px-3 py-3 text-px-xs text-white opacity-0 transition-[transform,opacity] [&.is-shown]:translate-y-0 [&.is-shown]:opacity-100" aria-label="Back to top">TOP</a>
   <dialog id="brief" aria-labelledby="brief-title" class="m-auto w-[min(680px,calc(100%-32px))] max-h-[calc(100dvh-32px)] overflow-y-auto bg-transparent p-0 backdrop:bg-ink/70">
     <div class="px-panel p-6 sm:p-8">
       <div class="flex items-start justify-between gap-4">
@@ -356,18 +410,16 @@
     </div>
   </dialog>
 
-
-  <!-- THE GAME: a fixed level strip. Scrolling the page makes the hero run through it. -->
-  <div id="runway" class="runway" data-theme="sky" role="region" aria-label="Game strip: scroll the page to run through the level">
-    <div id="rw-objs" class="absolute inset-0" aria-hidden="true"></div>
-    <img id="dino-follower" src="assets/sprites/dino.svg" alt="" class="rw-sprite hidden" aria-hidden="true" />
-    <img id="hero" src="assets/sprites/hero-idle.svg" alt="Divesh, pixel-art avatar" class="rw-sprite" />
-    <p id="rw-world" class="rw-label left-3"></p>
-    <p id="rw-tip" class="rw-label right-20 hidden text-right sm:block"></p>
-    <button type="button" id="rw-hide" class="absolute right-2 top-2 z-10 border-2 border-white bg-ink/60 px-1.5 py-1 font-pixel text-[8px] text-white hover:bg-white hover:text-ink">HIDE</button>
-    <div class="rw-ground" aria-hidden="true"></div>
+  <div id="pad" class="fixed inset-x-4 bottom-10 z-40 hidden justify-between [@media(pointer:coarse)]:flex" aria-hidden="true">
+    <div class="flex gap-3">
+      <button type="button" class="pad-btn" data-pad="left" tabindex="-1">◀</button>
+      <button type="button" class="pad-btn" data-pad="right" tabindex="-1">▶</button>
+    </div>
+    <div class="flex gap-3">
+      <button type="button" class="pad-btn" data-pad="down" tabindex="-1">▼</button>
+      <button type="button" class="pad-btn rounded-full bg-mario text-white" data-pad="jump" tabindex="-1">A</button>
+    </div>
   </div>
-  <button type="button" id="rw-show" class="px-btn fixed bottom-4 left-4 z-40 hidden bg-mario px-3 py-2 text-px-xs text-white"><img src="assets/sprites/hero-idle.svg" alt="" class="h-4 w-4" />Show game</button>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="fx" aria-hidden="true"></div>
