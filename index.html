@@ -3,305 +3,273 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Super Divesh Bros. | Divesh Kumar Chordia</title>
-  <meta name="description" content="Divesh Kumar Chordia — Backend, Data & GenAI Engineer at Contentstack. A Mario-themed portfolio: Go, Python, RAG, Kafka, Elasticsearch, MongoDB and more." />
-  <meta property="og:title" content="Super Divesh Bros. — Portfolio of Divesh Kumar Chordia" />
-  <meta property="og:description" content="Backend & data engineer building high-throughput systems and RAG pipelines. Press start to play." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23f8b800'/><rect x='0' y='0' width='16' height='1' fill='%23000'/><text x='8' y='13' font-size='12' text-anchor='middle' font-family='monospace' font-weight='bold' fill='%23000'>?</text></svg>" />
+  <title>Super Divesh Bros. — Divesh Kumar Chordia</title>
+  <meta name="description" content="Divesh Kumar Chordia — backend, data and GenAI engineer at Contentstack. Go platforms processing billions of log events, analytics APIs aggregating 2B+ monthly calls, and Python RAG systems." />
+  <meta name="theme-color" content="#5C94FC" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Super Divesh Bros. — Divesh Kumar Chordia" />
+  <meta property="og:description" content="Backend, data and GenAI engineer. Press start." />
+  <link rel="icon" href="assets/sprites/qblock.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/app.css" />
 </head>
 <body>
+  <a href="#about" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:font-pixel focus:text-px-xs">Skip to content</a>
 
-  <!-- ============ HUD ============ -->
-  <header class="hud" id="hud">
-    <div class="hud-row">
-      <div class="hud-cell"><span class="hud-label">DIVESH</span><span id="score">000000</span></div>
-      <div class="hud-cell"><span class="hud-label">&nbsp;</span><span><i class="mini-coin"></i>×<span id="coins">00</span></span></div>
-      <div class="hud-cell"><span class="hud-label">WORLD</span><span id="world">1-1</span></div>
-      <div class="hud-cell"><span class="hud-label">TIME</span><span id="time">400</span></div>
-      <div class="hud-cell hud-buttons">
-        <button class="hud-btn" id="soundBtn" aria-label="Toggle sound" title="Sound">♪ ON</button>
-        <button class="hud-btn" id="themeBtn" aria-label="Toggle day / night" title="Day / Night">☾</button>
-      </div>
+  <!-- ===================== HUD ===================== -->
+  <header class="fixed inset-x-0 top-0 z-40 border-b-3 border-ink bg-ink font-pixel text-px-xs text-white">
+    <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 pt-3 sm:py-4">
+      <dl class="grid flex-1 grid-cols-4 gap-4 sm:max-w-md">
+        <div><dt>DIVESH</dt><dd id="hud-score">000000</dd></div>
+        <div><dt class="invisible">COINS</dt><dd class="flex items-center gap-1"><img src="assets/sprites/coin.svg" alt="" class="h-[14px] w-2" /><span aria-label="coins">×<span id="hud-coins">00</span></span></dd></div>
+        <div><dt>WORLD</dt><dd id="hud-world">1-1</dd></div>
+        <div><dt>TIME</dt><dd id="hud-time">400</dd></div>
+      </dl>
+      <nav aria-label="Sections" class="hidden items-center gap-5 lg:flex" data-nav>
+        <a class="hud-link" href="#about" data-world="1-2">STATUS</a>
+        <a class="hud-link" href="#projects" data-world="1-3">PROJECTS</a>
+        <a class="hud-link" href="#experience" data-world="1-4">PROGRESS</a>
+        <a class="hud-link" href="#contact" data-world="8-4">CONTINUE</a>
+      </nav>
+      <button id="sound" type="button" class="border-2 border-white px-2 py-2 hover:bg-white hover:text-ink" aria-pressed="false">SOUND OFF</button>
     </div>
-    <nav class="world-nav" aria-label="Sections">
-      <a href="#about" data-world="1-1">1-1 ABOUT</a>
-      <a href="#skills" data-world="1-2">1-2 SKILLS</a>
-      <a href="#experience" data-world="1-3">1-3 XP</a>
-      <a href="#projects" data-world="1-4">1-4 PROJECTS</a>
-      <a href="#bonus" data-world="★">★ BONUS</a>
-      <a href="#contact" data-world="8-4">8-4 CASTLE</a>
+    <nav aria-label="Sections" class="flex gap-5 overflow-x-auto px-4 py-3 lg:hidden" data-nav>
+      <a class="hud-link" href="#about" data-world="1-2">STATUS</a>
+      <a class="hud-link" href="#projects" data-world="1-3">PROJECTS</a>
+      <a class="hud-link" href="#experience" data-world="1-4">PROGRESS</a>
+      <a class="hud-link" href="#contact" data-world="8-4">CONTINUE</a>
     </nav>
   </header>
 
   <main>
-    <!-- ============ HERO / TITLE SCREEN ============ -->
-    <section class="hero sky" id="top">
-      <div class="clouds" aria-hidden="true">
-        <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
-      </div>
-      <div class="stars" aria-hidden="true"></div>
+    <!-- ===================== WORLD 1-1 · TITLE ===================== -->
+    <section id="start" data-world="1-1" class="relative overflow-hidden bg-sky pt-[var(--hud)]">
+      <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="sprite absolute left-0 top-[calc(var(--hud)+12px)] w-24 animate-drift [animation-delay:-30s] sm:w-36" />
 
-      <div class="wrap hero-inner">
-        <div class="title-card">
-          <p class="tiny blink-soft">© 2026 CHORDIA ENTERTAINMENT</p>
-          <h1 class="logo" aria-label="Super Divesh Bros.">
-            <span class="logo-super">SUPER</span>
-            <span class="logo-main">
-              <b style="--c:#e52521">D</b><b style="--c:#f8b800">I</b><b style="--c:#43b047">V</b><b style="--c:#049cd8">E</b><b style="--c:#e52521">S</b><b style="--c:#f8b800">H</b>
-            </span>
-            <span class="logo-bros">BROS.</span>
-          </h1>
-          <p class="role">BACKEND · DATA · GENAI ENGINEER</p>
-          <p class="sub">Software Engineer @ <strong>Contentstack</strong> · Bengaluru, India</p>
-          <div class="hero-actions">
-            <a class="btn btn-red" href="#about">▶ PRESS START</a>
-            <a class="btn btn-yellow" href="resume.pdf" target="_blank" rel="noopener">⬇ RESUME</a>
-          </div>
+      <div class="relative mx-auto flex max-w-6xl flex-col items-center px-4 pt-12 text-center sm:pt-16">
+        <!-- title board -->
+        <h1 class="relative border-3 border-ink bg-brick px-5 pb-5 pt-4 shadow-px-lg sm:px-10 sm:pb-8 sm:pt-6" aria-label="Super Divesh Bros.">
+          <span aria-hidden="true" class="absolute left-2 top-2 h-2 w-2 bg-ink"></span>
+          <span aria-hidden="true" class="absolute right-2 top-2 h-2 w-2 bg-ink"></span>
+          <span aria-hidden="true" class="absolute bottom-2 left-2 h-2 w-2 bg-ink"></span>
+          <span aria-hidden="true" class="absolute bottom-2 right-2 h-2 w-2 bg-ink"></span>
+          <span class="block text-left font-pixel text-px-sm text-cream sm:text-px-md" style="text-shadow:2px 2px 0 #000">SUPER</span>
+          <span class="block font-pixel text-[32px] leading-[1.15] text-cream sm:text-[64px]" style="text-shadow:4px 4px 0 #000">DIVESH</span>
+          <span class="block text-right font-pixel text-px-sm text-cream sm:text-px-md" style="text-shadow:2px 2px 0 #000">BROS.</span>
+        </h1>
+        <p class="mt-4 font-pixel text-px-xs text-cream" style="text-shadow:2px 2px 0 #000">©2026 DIVESH KUMAR CHORDIA</p>
+
+        <p class="mt-8 max-w-xl font-pixel text-px-sm text-white sm:text-px-md" style="text-shadow:2px 2px 0 #000">BACKEND · DATA · GENAI ENGINEER</p>
+        <p class="mt-4 max-w-xl text-[19px] font-medium leading-relaxed text-white" style="text-shadow:2px 2px 0 #000">Software engineer on Contentstack's data and analytics platform in Bengaluru. I build the systems that record, deliver and count what customers do.</p>
+
+        <div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:gap-12">
+          <a href="#about" class="px-btn menu-opt bg-white" data-sfx="start">1 Player Start</a>
+          <a href="#projects" class="px-btn menu-opt bg-coin" data-sfx="pipe">Project Select</a>
         </div>
+        <p class="mt-6 font-pixel text-px-xs text-white" style="text-shadow:2px 2px 0 #000">TOP- <span id="top-score">000000</span></p>
+      </div>
 
-        <div class="game-box">
-          <div class="game-top">
-            <span>MINI-GAME: STOMP THE BUGS</span>
-            <span>HI <b id="hiScore">0</b></span>
+      <!-- playfield -->
+      <div id="field" tabindex="0" role="application" aria-roledescription="mini game"
+           aria-label="Playfield. Use left and right arrows to run, space to jump. Hit the question blocks from below for coins."
+           class="relative mt-6 h-[calc(var(--tile)*6)] outline-none [touch-action:manipulation]">
+        <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="sprite absolute left-0 top-[18%] w-20 animate-drift sm:w-28" />
+        <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="sprite absolute left-0 top-[40%] w-16 animate-drift [animation-delay:-55s] sm:w-24" />
+        <img src="assets/sprites/hill.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[2%] w-[calc(var(--tile)*5)]" />
+        <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[22%] hidden w-[calc(var(--tile)*3)] sm:block" />
+        <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 right-[22%] w-[calc(var(--tile)*2)] sm:w-[calc(var(--tile)*3)]" />
+        <div class="pipe absolute bottom-0 right-[6%] h-[calc(var(--tile)*2)]" data-solid aria-hidden="true"></div>
+
+        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*2.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
+        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="multi" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+        <button type="button" class="tile-block" style="left:calc(50% + var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
+        <button type="button" class="tile-block" style="left:calc(50% + var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
+
+        <img id="hero" src="assets/sprites/hero-idle.svg" alt="Divesh, pixel-art avatar" class="sprite absolute left-0 top-0 h-[var(--tile)] w-[var(--tile)] will-change-transform" />
+
+        <p id="play-hint" class="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 whitespace-nowrap font-pixel text-px-xs text-white [@media(pointer:coarse)]:hidden" style="text-shadow:2px 2px 0 #000">
+          <span class="animate-blink">&gt;</span> CLICK HERE · ARROW KEYS RUN · SPACE JUMPS
+        </p>
+      </div>
+
+      <div class="tile-ground relative h-[calc(var(--tile)*2)]">
+        <div class="absolute inset-x-4 top-1/2 hidden -translate-y-1/2 justify-between [@media(pointer:coarse)]:flex" aria-hidden="true">
+          <div class="flex gap-3">
+            <button type="button" class="pad-btn" data-pad="left" tabindex="-1">◀</button>
+            <button type="button" class="pad-btn" data-pad="right" tabindex="-1">▶</button>
           </div>
-          <canvas id="game" aria-label="Mini game: press space or tap to jump over bugs and collect coins"></canvas>
-          <p class="game-help">SPACE / ↑ / TAP TO JUMP · STOMP 🐞 BUGS · GRAB COINS</p>
+          <button type="button" class="pad-btn rounded-full bg-mario text-white" data-pad="jump" tabindex="-1">A</button>
         </div>
-      </div>
-
-      <div class="hills" aria-hidden="true">
-        <span class="hill h1"></span><span class="hill h2"></span>
-        <span class="bush b1"></span><span class="bush b2"></span>
-        <span class="pipe-deco p1"></span>
-      </div>
-      <div class="ground" aria-hidden="true"></div>
-    </section>
-
-    <!-- ============ 1-1 ABOUT ============ -->
-    <section class="level sky" id="about" data-world="1-1">
-      <div class="wrap">
-        <h2 class="level-title"><span class="world-tag">WORLD 1-1</span>IT'S-A ME, DIVESH!</h2>
-
-        <div class="about-grid">
-          <div class="dialog">
-            <div class="dialog-avatar"><canvas id="avatar" width="48" height="64" aria-hidden="true"></canvas></div>
-            <div class="dialog-text">
-              <p>I'm a <mark>backend &amp; data engineer</mark> who builds high-throughput systems that quietly do heavy lifting.</p>
-              <p>At <strong>Contentstack</strong> I architected a Go platform that chews through <mark>billions of log events</mark>, and analytics APIs aggregating <mark>2B+ monthly calls</mark>.</p>
-              <p>Off the main quest, I build <strong>Python RAG systems</strong> — vector search, cross-encoder re-ranking and self-correcting retrieval — and I work AI-first with Cursor, Claude Skills and MCP.</p>
-              <p class="dialog-sign">— Bengaluru, India 🇮🇳 · B.E. Computer Science, CGPA 9.05</p>
-            </div>
-          </div>
-
-          <div class="powerups">
-            <h3 class="mini-title">POWER-UPS COLLECTED</h3>
-            <ul class="stats">
-              <li><b data-count="1" data-suffix="B+">0</b><span>log events processed by my Go platform</span></li>
-              <li><b data-count="2" data-suffix="B+">0</b><span>monthly API calls aggregated</span></li>
-              <li><b data-count="67">0</b><span>operation types counted at scale</span></li>
-              <li><b data-count="75" data-suffix="+">0</b><span>webhook scope × action combos shipped</span></li>
-              <li><b data-count="10" data-suffix="">0</b><span>services security-hardened</span></li>
-              <li><b data-count="6">0</b><span>products onboarded to audit logs</span></li>
-              <li><b data-count="10000" data-suffix="+">0</b><span>records per SQL export</span></li>
-              <li><b data-count="9.05" data-decimals="2">0</b><span>CGPA at SJCE, Mysuru</span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <div class="ground ground-thin" aria-hidden="true"></div>
-    </section>
-
-    <!-- ============ 1-2 SKILLS ============ -->
-    <section class="level underground" id="skills" data-world="1-2">
-      <div class="wrap">
-        <h2 class="level-title light"><span class="world-tag">WORLD 1-2</span>HIT THE ? BLOCKS</h2>
-        <p class="hint">Every block hides a skill. Bump them all for a <b>1-UP</b>. <span id="blockCounter">0</span>/<span id="blockTotal">0</span> found · <button class="link-btn" id="revealAll">REVEAL ALL</button></p>
-        <div id="skillGroups" class="skill-groups"></div>
       </div>
     </section>
 
-    <!-- ============ 1-3 EXPERIENCE ============ -->
-    <section class="level sky" id="experience" data-world="1-3">
-      <div class="wrap">
-        <h2 class="level-title"><span class="world-tag">WORLD 1-3</span>QUEST LOG</h2>
+    <!-- ===================== WORLD 1-2 · STATUS ===================== -->
+    <section id="about" data-world="1-2" class="bg-night py-20 text-white sm:py-28">
+      <div class="mx-auto max-w-6xl px-4">
+        <p class="px-kicker">World 1-2 · The Power-Up</p>
+        <h2 class="px-heading mt-4">PLAYER STATUS</h2>
 
-        <div class="career">
-          <article class="job">
-            <header class="job-head">
-              <div class="flag-badge">NOW</div>
+        <div class="mt-12 grid gap-10 lg:grid-cols-[1.15fr_1fr]">
+          <!-- bio -->
+          <article class="px-panel p-6 sm:p-8">
+            <div class="flex items-center justify-between font-pixel text-px-xs text-white/60"><span>PLAYER 1</span><span>BENGALURU, IN</span></div>
+            <div class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end">
+              <div class="relative shrink-0">
+                <img src="assets/sprites/hero-idle.svg" alt="" class="sprite h-24 w-24 animate-bob sm:h-32 sm:w-32" />
+                <div class="tile-brick h-4 w-24 [--tile:16px] sm:h-8 sm:w-32 sm:[--tile:32px]" aria-hidden="true"></div>
+              </div>
               <div>
-                <h3>SOFTWARE ENGINEER</h3>
-                <p class="job-meta">Contentstack · Bengaluru (On-site) · Aug 2024 – Present</p>
+                <h3 class="font-pixel text-px-sm leading-relaxed text-coin sm:text-px-md">DIVESH KUMAR CHORDIA</h3>
+                <p class="mt-2 font-pixel text-px-xs text-white/70">CLASS: BACKEND ENGINEER · SUBCLASS: GENAI</p>
               </div>
-            </header>
-            <div class="stages" id="stagesSE"></div>
-          </article>
-
-          <article class="job">
-            <header class="job-head">
-              <div class="flag-badge flag-green">START</div>
-              <div>
-                <h3>SOFTWARE ENGINEER INTERN</h3>
-                <p class="job-meta">Contentstack · Bengaluru (On-site) · Jan 2024 – Jul 2024</p>
-              </div>
-            </header>
-            <div class="stages" id="stagesIntern"></div>
-          </article>
-        </div>
-      </div>
-      <div class="ground ground-thin" aria-hidden="true"></div>
-    </section>
-
-    <!-- ============ 1-4 PROJECTS ============ -->
-    <section class="level castle-level" id="projects" data-world="1-4">
-      <div class="lava" aria-hidden="true"></div>
-      <div class="wrap">
-        <h2 class="level-title light"><span class="world-tag">WORLD 1-4</span>BOSS FIGHTS: PROJECTS</h2>
-
-        <div class="pipeline-wrap">
-          <h3 class="mini-title light">HOW MY RAG ENGINES FIGHT HALLUCINATIONS</h3>
-          <div class="pipeline" role="list">
-            <div class="pnode" role="listitem"><i>📄</i>INGEST</div><span class="parrow">▶</span>
-            <div class="pnode" role="listitem"><i>✂️</i>CHUNK</div><span class="parrow">▶</span>
-            <div class="pnode" role="listitem"><i>🧬</i>EMBED</div><span class="parrow">▶</span>
-            <div class="pnode" role="listitem"><i>🗄️</i>VECTOR DB</div><span class="parrow">▶</span>
-            <div class="pnode" role="listitem"><i>🔀</i>MULTI-QUERY + FUSION</div><span class="parrow">▶</span>
-            <div class="pnode" role="listitem"><i>🎯</i>RE-RANK</div><span class="parrow">▶</span>
-            <div class="pnode" role="listitem"><i>🤖</i>LLM</div><span class="parrow">▶</span>
-            <div class="pnode pnode-loop" role="listitem"><i>🛡️</i>SELF-RAG CHECK ↺</div>
-          </div>
-        </div>
-
-        <div class="projects">
-          <article class="project">
-            <div class="boss-bar"><span>BOSS HP</span><i style="--hp:0%"></i><em>DEFEATED</em></div>
-            <h3>PRODUCTION-GRADE RAG PIPELINE</h3>
-            <p class="tags"><span>Python</span><span>LangChain</span><span>ChromaDB</span><span>Pinecone</span></p>
-            <ul>
-              <li>Ingests, chunks and embeds unstructured data as LLM prompt context.</li>
-              <li>Vector database semantic search for sharper answers and fewer hallucinations.</li>
-              <li>Production patterns: environment-based config, clean data pipelines, token-usage optimization.</li>
-            </ul>
-          </article>
-
-          <article class="project">
-            <div class="boss-bar"><span>BOSS HP</span><i style="--hp:0%"></i><em>DEFEATED</em></div>
-            <h3>CUSTOM RAG FRAMEWORK &amp; RETRIEVAL LAB</h3>
-            <p class="tags"><span>Python</span><span>RAG-Fusion</span><span>Cross-Encoders</span><span>Self-RAG</span></p>
-            <ul>
-              <li>Low-level framework to experiment with chunking, embedding generation and vector search strategies.</li>
-              <li>Multi-query translation, RAG-Fusion and cross-encoder re-ranking for better context relevance.</li>
-              <li>Guardrails + Self-RAG loops that catch and correct low-confidence outputs.</li>
-            </ul>
-          </article>
-
-          <article class="project project-ai">
-            <div class="boss-bar"><span>BOSS HP</span><i style="--hp:35%"></i><em>IN PROGRESS</em></div>
-            <h3>AI PLATFORM &amp; GATEWAY THINKING</h3>
-            <p class="tags"><span>Model routing</span><span>Rate limiting</span><span>Registries</span><span>Observability</span></p>
-            <ul>
-              <li>Model routing, rate limiting and usage tracking for multi-model LLM traffic.</li>
-              <li>Prompt / model / agent / MCP registries with guardrails baked in.</li>
-              <li>Applying the same high-throughput backend instincts from audit logging to AI infra.</li>
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ BONUS ============ -->
-    <section class="level bonus" id="bonus" data-world="★">
-      <div class="wrap">
-        <h2 class="level-title light"><span class="world-tag">BONUS ROOM</span>COINS, STARS &amp; 1-UPS</h2>
-
-        <div class="bonus-grid">
-          <div class="bonus-card edu">
-            <div class="big-star" aria-hidden="true">★</div>
-            <h3>BACHELOR OF ENGINEERING</h3>
-            <p>Computer Science</p>
-            <p class="dim">JSS Science and Technology University (SJCE), Mysuru</p>
-            <p class="score-line">2020 – 2024 · <b>CGPA 9.05</b></p>
-          </div>
-
-          <div class="bonus-card">
-            <h3 class="mini-title">1-UP CERTIFICATIONS</h3>
-            <ul class="oneups">
-              <li><span class="mush" aria-hidden="true"></span><div><b>Claude 101</b><small>Anthropic · Oct 2026</small></div></li>
-              <li><span class="mush" aria-hidden="true"></span><div><b>Databricks Fundamentals Accreditation</b><small>Databricks · Mar 2025 – Mar 2026</small></div></li>
-              <li><span class="mush" aria-hidden="true"></span><div><b>Machine Learning Specialization</b><small>DeepLearning.AI &amp; Stanford</small></div></li>
-              <li><span class="mush" aria-hidden="true"></span><div><b>Google Data Analytics Professional Certificate</b><small>Google</small></div></li>
-              <li><span class="mush" aria-hidden="true"></span><div><b>Google UX Design Professional Certificate</b><small>Google</small></div></li>
-            </ul>
-          </div>
-
-          <div class="bonus-card">
-            <h3 class="mini-title">LIVES (LANGUAGES)</h3>
-            <ul class="lives">
-              <li><span>ENGLISH</span><span class="hearts">♥♥♥</span><small>Fluent</small></li>
-              <li><span>HINDI</span><span class="hearts">♥♥♥</span><small>Native</small></li>
-              <li><span>KANNADA</span><span class="hearts">♥♥<i>♥</i></span><small>Intermediate</small></li>
-            </ul>
-            <h3 class="mini-title" style="margin-top:1.4rem">SECRET WARP ZONE</h3>
-            <p class="dim">Psst… try the Konami code: <kbd>↑</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd><kbd>←</kbd><kbd>→</kbd><kbd>B</kbd><kbd>A</kbd></p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 8-4 CONTACT ============ -->
-    <section class="level sky finale" id="contact" data-world="8-4">
-      <div class="wrap">
-        <h2 class="level-title"><span class="world-tag">WORLD 8-4</span>YOU REACHED THE CASTLE!</h2>
-
-        <div class="finale-grid">
-          <div class="flag-scene" aria-hidden="true">
-            <div class="pole"><span class="ball"></span><span class="flag" id="flag"></span></div>
-            <div class="castle">
-              <div class="castle-top"><i></i><i></i><i></i><i></i><i></i></div>
-              <div class="castle-body"><span class="door"></span></div>
             </div>
-          </div>
+            <div class="mt-6 space-y-4 text-white/90">
+              <p>I work on <strong class="font-semibold text-white">Contentstack</strong>'s data and analytics platform: the systems that record everything customers do, deliver those events to their own servers, and turn raw traffic into analytics they can act on.</p>
+              <p>I own the Go audit-logging platform that stores billions of logs, work on the Spark pipelines and Analytics API behind 2B+ monthly API calls, and ship analytics features end to end, from data model to dashboard to the automated checks that prove the numbers are right.</p>
+              <p>On my own time I build RAG systems in Python, and I work AI-first with Claude Skills and MCP.</p>
+            </div>
+            <p class="mt-6 border-t-2 border-dashed border-white/20 pt-4 font-pixel text-px-xs leading-6 text-white/60">SPEAKS: ENGLISH · HINDI · KANNADA</p>
+          </article>
 
-          <div class="dialog contact-box">
-            <div class="dialog-text">
-              <p class="big-line">THANK YOU FOR VISITING!</p>
-              <p>But your next great engineer is <mark>right here in this castle</mark>. Let's build something high-throughput together.</p>
-              <div class="contact-links">
-                <a class="btn btn-red" href="mailto:diveshkumarchordia@gmail.com">✉ EMAIL</a>
-                <a class="btn btn-green" href="https://www.linkedin.com/in/divesh-kumar-chordia-84471720b" target="_blank" rel="noopener">in LINKEDIN</a>
-                <a class="btn btn-blue" href="https://github.com/DiveshKumarChordia" target="_blank" rel="noopener">⌂ GITHUB</a>
-                <a class="btn btn-yellow" href="resume.pdf" target="_blank" rel="noopener">⬇ RESUME</a>
-              </div>
-              <p class="dim mono">diveshkumarchordia@gmail.com</p>
-              <button class="btn btn-ghost" id="flagBtn">⚑ GRAB THE FLAG</button>
+          <!-- stats -->
+          <div class="flex flex-col gap-6">
+            <ul class="px-panel divide-y-2 divide-dashed divide-white/20 px-6 sm:px-8">
+              <li class="flex items-center gap-5 py-5">
+                <img src="assets/sprites/oneup.svg" alt="" class="sprite h-8 w-8 shrink-0" />
+                <div class="flex-1"><p class="font-pixel text-px-xs text-white/60">LIVES</p><p class="text-white/80">Years shipping to production</p></div>
+                <p class="font-pixel text-px-lg text-white">×<span data-years>02</span></p>
+              </li>
+              <li class="flex items-center gap-5 py-5">
+                <img src="assets/sprites/coin.svg" alt="" class="sprite h-8 w-[18px] shrink-0 mx-[7px]" />
+                <div class="flex-1"><p class="font-pixel text-px-xs text-white/60">COINS</p><p class="text-white/80">Products onboarded to the audit platform</p></div>
+                <p class="font-pixel text-px-lg text-white">×06</p>
+              </li>
+              <li class="flex flex-wrap items-center gap-x-5 gap-y-2 py-5">
+                <img src="assets/sprites/star.svg" alt="" class="sprite h-8 w-8 shrink-0" />
+                <div class="flex-1"><p class="font-pixel text-px-xs text-white/60">SCORE</p><p class="text-white/80">Monthly API calls my analytics APIs aggregate</p></div>
+                <p class="font-pixel text-px-md text-coin sm:text-px-lg">2,000,000,000</p>
+              </li>
+              <li class="flex items-center gap-5 py-5">
+                <img src="assets/sprites/qblock.svg" alt="" class="sprite h-8 w-8 shrink-0" />
+                <div class="flex-1"><p class="font-pixel text-px-xs text-white/60">TOP</p><p class="text-white/80">CGPA, B.E. Computer Science</p></div>
+                <p class="font-pixel text-px-lg text-white">9.05</p>
+              </li>
+            </ul>
+
+            <div class="px-panel p-6 sm:p-8">
+              <p class="font-pixel text-px-xs text-white/60">1-UPS · CERTIFICATIONS</p>
+              <ul class="mt-4 space-y-2 text-white/90">
+                <li><a class="underline decoration-white/30 underline-offset-4 hover:decoration-coin" href="https://academy.claude.com/verify/b0ee8d91c9758e3e7aed66d871da8314" target="_blank" rel="noopener">Claude 101</a> <span class="text-white/50">· Anthropic, 2026</span></li>
+                <li>Databricks Fundamentals Accreditation <span class="text-white/50">· Databricks</span></li>
+                <li>Machine Learning Specialization <span class="text-white/50">· DeepLearning.AI &amp; Stanford</span></li>
+                <li>Data Analytics Professional Certificate <span class="text-white/50">· Google</span></li>
+                <li>UX Design Professional Certificate <span class="text-white/50">· Google</span></li>
+              </ul>
             </div>
           </div>
         </div>
+
+        <!-- inventory -->
+        <h3 class="mt-20 font-pixel text-px-sm text-white sm:text-px-md">INVENTORY</h3>
+        <p class="mt-3 text-white/70">Every power-up is a toolkit I use in production.</p>
+        <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" id="inventory"></div>
       </div>
-      <div class="ground" aria-hidden="true"></div>
+    </section>
+
+    <!-- ===================== WORLD 1-3 · LEVEL SELECT ===================== -->
+    <section id="projects" data-world="1-3" class="relative overflow-hidden bg-cream py-20 sm:py-28"
+             style="background-image:linear-gradient(#0000000f 2px,transparent 2px),linear-gradient(90deg,#0000000f 2px,transparent 2px);background-size:var(--tile) var(--tile)">
+      <div class="mx-auto max-w-6xl px-4">
+        <p class="px-kicker !text-brick ![text-shadow:none]">World 1-3 · Level Select</p>
+        <h2 class="mt-4 font-pixel text-px-lg text-ink sm:text-px-xl">PROJECT SELECT</h2>
+        <p class="mt-4 max-w-2xl text-ink/80">Each level says why the system exists, what I built, and what it changed. Main quests are Contentstack work; side quests are my own.</p>
+
+        <ol class="relative mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2 lg:grid-cols-3" id="levels">
+          <!-- path between levels -->
+          <li aria-hidden="true" class="pointer-events-none absolute inset-x-[12%] top-[calc(var(--tile)/2)] hidden h-0 border-t-4 border-dotted border-brick/50 lg:block"></li>
+          <li aria-hidden="true" class="pointer-events-none absolute inset-x-[12%] top-[calc(50%+var(--tile)/2)] hidden h-0 border-t-4 border-dotted border-brick/50 lg:block"></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===================== WORLD 1-4 · PROGRESS ===================== -->
+    <section id="experience" data-world="1-4" class="relative overflow-hidden bg-sky pt-20 sm:pt-28">
+      <div class="mx-auto max-w-6xl px-4">
+        <p class="px-kicker">World 1-4 · The Climb</p>
+        <h2 class="px-heading mt-4">PROGRESS</h2>
+        <p class="mt-4 max-w-2xl text-[19px] font-medium text-white" style="text-shadow:2px 2px 0 #00000080">Every level cleared so far, climbing out of the pipe I started in.</p>
+      </div>
+
+      <div class="relative mx-auto mt-14 max-w-5xl px-4" id="climb">
+        <!-- vine -->
+        <div class="absolute bottom-[calc(var(--tile)*2)] left-[calc(16px+var(--tile)*0.875)] top-0 w-[var(--tile)] -translate-x-1/2 md:left-1/2" aria-hidden="true">
+          <div id="vine" class="tile-vine h-full w-full origin-bottom" style="transform:scaleY(0)"></div>
+        </div>
+
+        <ol class="relative space-y-12 pb-12" id="timeline"></ol>
+
+        <div class="relative h-[calc(var(--tile)*2)]">
+          <div class="pipe absolute bottom-0 left-[16px] h-full md:left-1/2 md:-translate-x-1/2" aria-hidden="true"></div>
+          <p class="absolute bottom-3 left-[calc(16px+var(--tile)*2.25)] font-pixel text-px-xs text-white md:left-[calc(50%+var(--tile)*1.25)]" style="text-shadow:2px 2px 0 #000">START · MYSURU, 2020</p>
+        </div>
+      </div>
+      <div class="tile-ground h-[calc(var(--tile)*2)]" aria-hidden="true"></div>
+    </section>
+
+    <!-- ===================== WORLD 8-4 · CONTINUE ===================== -->
+    <section id="contact" data-world="8-4" class="bg-night py-20 text-white sm:py-28">
+      <div class="mx-auto max-w-3xl px-4">
+        <p class="px-kicker text-center">World 8-4 · Mushroom House</p>
+        <h2 class="px-heading mt-4 text-center">CONTINUE?</h2>
+
+        <div class="mt-12 flex items-end justify-center gap-6" aria-hidden="true">
+          <img src="assets/sprites/coin.svg" alt="" class="sprite mb-4 h-7 w-4 animate-bob" />
+          <img src="assets/sprites/host.svg" alt="" class="sprite h-24 w-24" />
+          <img src="assets/sprites/coin.svg" alt="" class="sprite mb-4 h-7 w-4 animate-bob [animation-delay:-.8s]" />
+        </div>
+
+        <div class="px-panel mt-6 p-6 sm:p-8">
+          <p class="min-h-[4.5em] font-pixel text-px-xs leading-6 sm:text-px-sm sm:leading-7" id="dialog"
+             data-text="WELCOME, TRAVELER! WANT TO BUILD SOMETHING THAT HANDLES BILLIONS OF EVENTS? LEAVE A MESSAGE AND DIVESH WILL WRITE BACK.">WELCOME, TRAVELER! WANT TO BUILD SOMETHING THAT HANDLES BILLIONS OF EVENTS? LEAVE A MESSAGE AND DIVESH WILL WRITE BACK.</p>
+
+          <form id="contact-form" class="mt-8 grid gap-5" novalidate>
+            <div class="grid gap-5 sm:grid-cols-2">
+              <label class="grid gap-2"><span class="font-pixel text-px-xs text-white/70">NAME</span><input class="px-field" name="name" autocomplete="name" required /></label>
+              <label class="grid gap-2"><span class="font-pixel text-px-xs text-white/70">EMAIL</span><input class="px-field" name="email" type="email" autocomplete="email" required /></label>
+            </div>
+            <label class="grid gap-2"><span class="font-pixel text-px-xs text-white/70">MESSAGE</span><textarea class="px-field min-h-[140px] resize-y" name="message" required></textarea></label>
+            <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <button type="submit" class="px-btn bg-coin">
+                <img src="assets/sprites/coin.svg" alt="" class="h-[21px] w-3" />Insert coin to send message
+              </button>
+              <p id="form-status" class="font-pixel text-px-xs text-coin" role="status" aria-live="polite"></p>
+            </div>
+          </form>
+        </div>
+
+        <ul class="mt-10 flex flex-wrap justify-center gap-4">
+          <li><a class="px-btn bg-white py-3 text-px-xs" href="mailto:diveshkumarchordia@gmail.com">Email</a></li>
+          <li><a class="px-btn bg-white py-3 text-px-xs" href="https://www.linkedin.com/in/divesh-kumar-chordia-84471720b/" target="_blank" rel="noopener">LinkedIn</a></li>
+          <li><a class="px-btn bg-white py-3 text-px-xs" href="https://github.com/DiveshKumarChordia" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a class="px-btn bg-coin py-3 text-px-xs" href="resume.pdf" target="_blank" rel="noopener">Resume (PDF)</a></li>
+        </ul>
+      </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <p>© 2026 DIVESH KUMAR CHORDIA · BUILT WITH HTML, CSS &amp; VANILLA JS</p>
-    <p class="dim">Fan-made, Mario-inspired theme. Mario is a trademark of Nintendo — this site is not affiliated with or endorsed by Nintendo.</p>
+  <footer class="bg-ink">
+    <div class="tile-brick h-[var(--tile)]" aria-hidden="true"></div>
+    <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 font-pixel text-px-xs leading-6 text-white/60 sm:flex-row sm:justify-between">
+      <p>©2026 DIVESH KUMAR CHORDIA · THANK YOU FOR PLAYING</p>
+      <p>FAN-MADE TRIBUTE · NOT AFFILIATED WITH NINTENDO</p>
+    </div>
   </footer>
 
-  <!-- scroll progress walker -->
-  <div class="walker" aria-hidden="true">
-    <img id="walkerImg" alt="" />
-    <span class="walker-flag">⚑</span>
-  </div>
+  <a href="#start" id="to-top" class="px-btn fixed bottom-4 right-4 z-30 translate-y-24 bg-luigi px-3 py-3 text-px-xs text-white opacity-0 transition-[transform,opacity] [&.is-shown]:translate-y-0 [&.is-shown]:opacity-100" aria-label="Back to top">▲ TOP</a>
 
-  <button class="warp-pipe" id="warpPipe" aria-label="Warp back to top"><span>TOP</span></button>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <div id="fx" aria-hidden="true"></div>
-
-  <script src="script.js"></script>
+  <script src="assets/app.js" defer></script>
 </body>
 </html>

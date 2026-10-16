@@ -1,0 +1,14 @@
+{
+  "name": "super-divesh-bros",
+  "private": true,
+  "description": "Super Divesh Bros. — a pixel-art portfolio for Divesh Kumar Chordia",
+  "scripts": {
+    "sprites": "node tools/sprites.mjs",
+    "css": "tailwindcss -i src/input.css -o assets/app.css --minify",
+    "build": "npm run sprites && npm run css",
+    "dev": "tailwindcss -i src/input.css -o assets/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

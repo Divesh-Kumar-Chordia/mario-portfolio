@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { --tile: 32px; --hud: 88px; }
+  @media (min-width: 640px) { :root { --tile: 48px; --hud: 72px; } }
+
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--hud) + 16px); }
+  body { @apply bg-sky font-body text-[17px] leading-[1.65] text-ink antialiased; }
+  ::selection { @apply bg-coin text-ink; }
+  :focus-visible { outline: 3px dashed #fff; outline-offset: 3px; }
+  img { image-rendering: pixelated; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  }
+}
+
+@layer components {
+  /* ---- type ---- */
+  .px-heading { @apply font-pixel text-px-lg text-white sm:text-px-xl; text-shadow: 4px 4px 0 #000; }
+  .px-kicker { @apply font-pixel text-px-xs uppercase tracking-widest text-coin; text-shadow: 2px 2px 0 #000; }
+
+  /* ---- retro buttons ---- */
+  .px-btn {
+    @apply relative inline-flex select-none items-center gap-3 border-3 border-ink px-5 py-4 font-pixel text-px-sm uppercase text-ink shadow-px transition-[transform,box-shadow] duration-100;
+  }
+  .px-btn:hover { @apply -translate-y-1 shadow-px-lift; }
+  .px-btn:active { @apply translate-x-1 translate-y-1 shadow-none; }
+  .px-btn:focus-visible { outline-color: #000; }
+
+  /* mushroom cursor that appears beside menu options, like the title screen */
+  .menu-opt::before {
+    content: ""; @apply absolute -left-10 top-1/2 h-6 w-6 -translate-y-1/2 opacity-0;
+    background: url(sprites/mushroom.svg) center / contain no-repeat;
+  }
+  .menu-opt:hover::before, .menu-opt:focus-visible::before { @apply opacity-100; }
+
+  /* ---- panels ---- */
+  .px-card { @apply border-3 border-ink bg-white shadow-px-lg; }
+  .px-panel { @apply border-3 border-white bg-ink text-white; box-shadow: 0 0 0 3px #000, 8px 8px 0 3px #000; }
+  .px-tag { @apply inline-block border-2 border-ink bg-white px-2 py-1 font-pixel text-px-xs uppercase leading-none text-ink shadow-px-sm; }
+
+  .px-field {
+    @apply w-full border-3 border-white bg-ink px-4 py-3 font-body text-[18px] text-white placeholder:text-white/40;
+  }
+  .px-field:focus { @apply border-coin outline-none; }
+
+  /* ---- tiles & scenery ---- */
+  .tile-ground { background: url(sprites/ground.svg) 0 0 / var(--tile) var(--tile) repeat; }
+  .tile-brick { background: url(sprites/brick.svg) 0 0 / var(--tile) var(--tile) repeat; }
+  .tile-vine { background: url(sprites/vine.svg) 50% 100% / var(--tile) var(--tile) repeat-y; }
+  .sprite { image-rendering: pixelated; @apply pointer-events-none select-none; }
+
+  .pipe { @apply relative; width: calc(var(--tile) * 1.75); }
+  .pipe::before, .pipe::after { content: ""; @apply absolute border-3 border-ink; }
+  .pipe::before { /* lip */
+    inset: 0 0 auto 0; height: calc(var(--tile) * 0.75);
+    background: linear-gradient(90deg, #006A2E 0 8%, #8EE68E 8% 22%, #00B259 22% 78%, #006A2E 78% 100%);
+  }
+  .pipe::after { /* body */
+    inset: calc(var(--tile) * 0.75 - 3px) 8% 0 8%;
+    background: linear-gradient(90deg, #006A2E 0 8%, #8EE68E 8% 22%, #00B259 22% 74%, #006A2E 74% 100%);
+    border-top: 0;
+  }
+
+  /* ---- interactive blocks ---- */
+  .tile-block { @apply absolute block cursor-pointer; width: var(--tile); height: var(--tile); }
+  .tile-block img { @apply h-full w-full; }
+  .tile-block.is-bumped { @apply animate-bump; }
+
+  .coin-fx { @apply sprite pointer-events-none absolute left-1/2 animate-coin-pop; width: calc(var(--tile) * 0.5); height: calc(var(--tile) * 0.875); margin-left: calc(var(--tile) * -0.25); bottom: 100%; }
+  .score-fx { @apply pointer-events-none fixed z-50 animate-score-pop font-pixel text-px-xs text-white; text-shadow: 2px 2px 0 #000; }
+
+  /* ---- level-select cards ---- */
+  .level-card { @apply relative flex flex-col transition-transform; }
+  .level-card:hover > .tile-brick, .level-card.is-bumped { @apply animate-bump; }
+
+  /* ---- vine timeline ---- */
+  .checkpoint-flag { @apply absolute h-4 w-6 border-2 border-ink bg-white/60 transition-colors duration-300; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  .is-cleared .checkpoint-flag { @apply bg-luigi; }
+
+  /* ---- HUD nav ---- */
+  .hud-link { @apply whitespace-nowrap text-white/70 transition-colors hover:text-white; }
+  .hud-link[aria-current="true"] { @apply text-coin; }
+  .hud-link[aria-current="true"]::before { content: "\25B6\00A0"; }
+
+  /* ---- touch pad ---- */
+  .pad-btn { @apply grid h-14 w-14 place-items-center border-3 border-ink bg-white/90 font-body text-[20px] font-bold text-ink shadow-px active:translate-y-1 active:shadow-none; touch-action: none; }
+
+  /* Konami reward */
+  .star-power #hero, .star-power .px-heading { @apply animate-rainbow; }
+}
