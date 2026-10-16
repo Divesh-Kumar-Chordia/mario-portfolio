@@ -107,7 +107,6 @@
   .tile-block { @apply transition-transform hover:-translate-y-1; }
   .tile-block:hover img { filter: drop-shadow(0 4px 0 rgba(0,0,0,.25)); }
   [data-pipe=out] { @apply cursor-pointer; }
-  [data-stage]:focus-visible { outline: 2px dashed rgba(255,255,255,.45); outline-offset: -4px; }
 
   /* ---- skill ? blocks ---- */
   .qb { @apply relative block h-10 w-10 transition-transform hover:-translate-y-1; }
