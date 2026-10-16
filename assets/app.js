@@ -296,7 +296,15 @@
             <ol class="flow mt-2">${l.flow.map((f) => `<li><span>${esc(f)}</span></li>`).join("")}</ol>
             ${l.fail ? `<p class="mt-2 font-pixel text-[8px] leading-4 text-mario">ON FAILURE: ${esc(l.fail)}</p>` : ""}
           </dd></div>
-          <div><dt class="font-pixel text-px-xs text-ink/50">WHAT I BUILT</dt><dd><ul class="mt-2 space-y-2">${bullets(l.built)}</ul></dd></div>
+          <div><dt class="sr-only">What I built</dt><dd>
+            <details class="group">
+              <summary class="flex cursor-pointer list-none items-center gap-3 font-pixel text-px-xs text-ink/70 hover:text-ink [&::-webkit-details-marker]:hidden">
+                <img src="${SPR("qblock")}" alt="" class="h-5 w-5 group-open:hidden" /><img src="${SPR("qblock-used")}" alt="" class="hidden h-5 w-5 group-open:block" />
+                <span class="group-open:hidden">WHAT I BUILT (${l.built.split(/(?<=\.)\s+(?=[A-Z$])/).length})</span><span class="hidden group-open:inline">WHAT I BUILT</span>
+              </summary>
+              <ul class="mt-3 space-y-2">${bullets(l.built)}</ul>
+            </details>
+          </dd></div>
         </dl>
         <p class="mt-5 flex items-center gap-3 border-2 border-dashed border-ink/30 px-3 py-2 font-pixel text-px-xs leading-5">
           <img src="${SPR("coin")}" alt="" class="h-[14px] w-2 shrink-0" />${l.stat}
@@ -307,7 +315,7 @@
   }).join(""));
 
   $$("[data-level]").forEach((card) => card.addEventListener("click", (e) => {
-    if (e.target.closest("a") || getSelection().toString()) return;
+    if (e.target.closest("a, details") || getSelection().toString()) return;
     bumpEl(card); popCoin(card.firstElementChild); sfx.coin(); addCoin(); addScore(200);
     const r = card.getBoundingClientRect(); popScore("200", r.left + r.width / 2 - 12, r.top - 24);
   }));
@@ -376,7 +384,8 @@
   // physics in tile units, so the game plays the same at 32px and 48px tiles; y grows upward from the ground
   const P = { x: 0, y: 0, vx: 0, vy: 0, w: 0.8, h: 1, ground: true, face: 1, hurt: 0 };
   const G = { x: 1, y: 4, shy: false, t: 0 };
-  const keys = { left: false, right: false, jump: false };
+  const keys = { left: false, right: false, jump: false, down: false };
+  let warping = 0;
   let T = 48, W = 0, H = 0, rects = [], spawnX = 0, lastJump = false, walkT = 0;
   let enemies = [], nextEnemy = 1.5, fixed = 0, fieldVisible = true;
 
@@ -429,7 +438,23 @@
     sfx.hurt(); toast(kind === "bug" ? "A BUG GOT TO PROD! STOMP IT FROM ABOVE" : "LEGACY CODE BIT BACK! STOMP IT FROM ABOVE");
   }
 
+  function warp() {
+    if (warping) return;
+    warping = 0.7; hero.style.zIndex = "5"; sfx.pipe(); startPlaying();
+    setTimeout(() => {
+      $("#projects").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+      toast("WARP ZONE! WELCOME TO WORLD 1-4");
+      setTimeout(() => { warping = 0; hero.style.zIndex = ""; spawnHero(); }, 600);
+    }, 700);
+  }
+  $("[data-warp]", field).addEventListener("pointerdown", (e) => { e.stopPropagation(); warp(); });
+
   function step(dt) {
+    if (warping) { P.y -= 1.6 * dt; P.vx = 0; return; } // sink into the pipe
+    const pipe = rects.find((r) => r.el.hasAttribute("data-warp"));
+    if (keys.down && P.ground && pipe && Math.abs(P.y - (pipe.y + pipe.h)) < 0.05 && P.x + P.w / 2 > pipe.x && P.x + P.w / 2 < pipe.x + pipe.w) {
+      P.x = pipe.x + (pipe.w - P.w) / 2; warp(); return;
+    }
     const accel = P.ground ? 40 : 24, maxV = 6;
     const dir = P.hurt > 0.9 ? 0 : (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     if (dir) { P.vx += dir * accel * dt; P.face = dir; } else { P.vx *= P.ground ? 0.78 : 0.96; if (Math.abs(P.vx) < 0.05) P.vx = 0; }
@@ -516,20 +541,33 @@
   addEventListener("resize", () => { const ox = P.x / (W || 1); measure(); P.x = ox * W; enemies.forEach((en) => { en.x = Math.min(en.x, spawnX); }); });
   (document.fonts?.ready ?? Promise.resolve()).then(() => { measure(); spawnHero(); requestAnimationFrame(loop); });
 
-  const KEYMAP = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "jump", ArrowUp: "jump", KeyW: "jump" };
+  const KEYMAP = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "jump", ArrowUp: "jump", KeyW: "jump", ArrowDown: "down", KeyS: "down" };
   const startPlaying = () => hint.classList.add("hidden");
   field.addEventListener("keydown", (e) => {
     const k = KEYMAP[e.code]; if (!k) return;
     e.preventDefault(); keys[k] = true; startPlaying();
   });
   field.addEventListener("keyup", (e) => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
-  field.addEventListener("blur", () => { keys.left = keys.right = keys.jump = false; });
+  field.addEventListener("blur", () => { keys.left = keys.right = keys.jump = keys.down = false; });
   field.addEventListener("pointerdown", () => field.focus({ preventScroll: true }));
   $$("[data-pad]").forEach((btn) => {
     const k = btn.dataset.pad;
     btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[k] = true; startPlaying(); });
     ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => btn.addEventListener(ev, () => { keys[k] = false; }));
   });
+
+  /* ================= recruiter brief ================= */
+  const brief = $("#brief");
+  $("#brief-open").addEventListener("click", () => { brief.showModal(); sfx.pipe(); });
+  brief.addEventListener("click", (e) => { if (e.target === brief) brief.close(); }); // click on the backdrop
+
+  /* ================= intro card ================= */
+  const root = document.documentElement;
+  if (root.classList.contains("intro")) {
+    const done = () => root.classList.remove("intro");
+    setTimeout(done, 1100);
+    $("#intro").addEventListener("click", done);
+  }
 
   /* ================= contact ================= */
   const dialog = $("#dialog");
