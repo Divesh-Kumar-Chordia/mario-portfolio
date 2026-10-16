@@ -310,12 +310,10 @@
     $("[data-label]", nightBtn).textContent = night ? "DAY" : "NIGHT";
     $("[data-icon]", nightBtn).src = SPR(night ? "icon-sun" : "icon-moon");
     nightBtn.setAttribute("aria-pressed", night);
-    $("#ghost").classList.toggle("hidden", !night);
   };
   paintNight();
   nightBtn.addEventListener("click", () => {
     night = !night; store.set("sdb-night", night); paintNight(); sfx.pipe();
-    if (night) toast("SOMETHING STIRS IN THE DARK...");
   });
   // a sky full of pixel stars, shown only at night
   $(".stars").innerHTML = `<i class="absolute left-0 top-0 h-[2px] w-[2px]" style="box-shadow:${Array.from({ length: 60 }, () =>
@@ -557,421 +555,245 @@
   $("#flagpole").addEventListener("click", (e) => { e.stopPropagation(); courseClear(); });
 
   /* =================================================================
-     THE GAME: the page itself is the level. The hero walks on your
-     cards, panels and headings, and the content reacts to it.
+     THE GAME: a fixed level strip along the bottom. Scrolling the page
+     makes the hero run; each section's objects arrive on the floor as
+     that section comes on screen, and react when the hero reaches them.
      ================================================================= */
   const TOUCH = matchMedia("(pointer: coarse)").matches;
-  const kbd = (k) => `<kbd>${k}</kbd>`;
-  const world = Object.assign(document.createElement("div"), { id: "world" });
-  world.className = "pointer-events-none absolute left-0 top-0 z-30 h-0 w-full";
-  document.body.append(world);
-  const hero = $("#hero"), ghost = $("#ghost"), coach = $("#coach"), pointer = $("#pointer");
-  const follower = Object.assign(document.createElement("img"), { src: SPR("dino"), alt: "" });
-  follower.className = "sprite absolute left-0 top-0 hidden";
-  const bossHp = Object.assign(document.createElement("div"), { className: "absolute left-0 top-0 hidden flex gap-1" });
-  [hero, follower, ghost, coach, pointer, bossHp].forEach((el) => world.append(el));
-  hero.classList.add("pointer-events-auto", "cursor-pointer");
-  hero.title = "Click me to play";
-  const playBtn = $("#play"), padEl = $("#pad");
-
-  // what counts as ground: you can jump up through these and land on top
-  const ONEWAY = ".px-card, .px-panel, #skill-groups > article, #side-quests > article, #start h1, .px-heading, #projects h2, [data-map], .tile-ground, .tile-brick, .tile-brick-blue, #brief-open";
-  // fully solid: these block you from below (and react when bumped)
-  const SOLID = "#start .tile-block, .qb, .pipe, .level-card > .tile-brick";
-  const ENEMY = {
-    bug: { frames: ["bug-1", "bug-2"], flat: "bug-flat", aspect: 14 / 16, speed: 1.4, points: 100, label: "BUG FIXED" },
-    turtle: { frames: ["turtle-1", "turtle-2"], flat: "shell", aspect: 11 / 16, speed: 0.9, points: 200, label: "REFACTORED" },
+  const runway = $("#runway"), objLayer = $("#rw-objs"), hero = $("#hero"), dino = $("#dino-follower");
+  const worldLabel = $("#rw-world"), tipLabel = $("#rw-tip");
+  const SECTIONS = {
+    start: { name: "WORLD 1-1 · OVERWORLD", theme: "sky", tip: TOUCH ? "SCROLL TO RUN · TAP HERE TO JUMP" : "SCROLL OR → TO RUN · ↑ TO JUMP" },
+    about: { name: "WORLD 1-2 · NIGHT", theme: "night", tip: "YOUR DINO SIDEKICK JOINS IN THIS WORLD" },
+    skills: { name: "WORLD 1-3 · UNDERGROUND", theme: "underground", tip: "? BLOCKS REVEAL EACH SKILL GROUP" },
+    projects: { name: "WORLD 1-4 · CASTLE", theme: "castle", tip: TOUCH ? "TAP A PIPE TO OPEN THAT PROJECT'S MAP" : "↓ AT A PIPE OPENS THAT PROJECT'S MAP" },
+    experience: { name: "WORLD 1-5 · THE CLIMB", theme: "sky", tip: "EVERY FLAG IS A LEVEL CLEARED" },
+    contact: { name: "WORLD 8-4 · MUSHROOM HOUSE", theme: "night", tip: "THE END · SAY HI BELOW" },
   };
-  const TIPS = {
-    start: null, // the tutorial handles the title screen
-    about: { text: "PLAYER STATUS<br>YOUR DINO IS ON THE CARD. WALK INTO IT!", target: () => $("[data-npc=dino]") },
-    skills: { text: "UNDERGROUND<br>HIT ? BLOCKS FROM BELOW TO REVEAL SKILLS", target: () => $$(".qb").find((q) => !q.closest(".found")) },
-    projects: { text: `LEVEL SELECT<br>HIT A CARD'S BRICKS FROM BELOW TO OPEN IT.<br>STOMP "VIEW SYSTEM MAP" FOR THE DIAGRAM`, target: () => $(".level-card > .tile-brick") },
-    experience: { text: `THE CLIMB<br>${kbd("↑")}${kbd("↓")} ON THE VINE TO CLIMB · RUN TO THE FLAG`, target: () => $("#flagpole") },
-    contact: { text: "MUSHROOM HOUSE<br>SAY HI TO THE HOST", target: () => $("[data-npc=host]") },
-  };
+  const H = { y: 0, vy: 0, face: 1, walkT: 0, bounces: 0 };
+  let S = 32, heroX = 120, objs = [], pairs = [], shownO = null, lastScroll = scrollY, speed = 0, fixed = 0, trail = [];
+  let G = { dino: false };
 
-  const G = { playing: false, started: false, dino: false, bossDown: false, seen: new Set() };
-  const P = { x: 0, y: 0, vx: 0, vy: 0, w: 0, h: 0, ground: null, face: 1, hurt: 0, jumps: 0, climb: false };
-  const keys = { left: false, right: false, jump: false, down: false, up: false };
-  let T = 48, plats = [], pickups = [], npcs = [], enemies = [], boss = null, lastJump = false, walkT = 0;
-  let dropFrom = null, dropT = 0, warping = 0, userScrollT = 0, nextEnemy = 4, fixed = 0, trail = [], coachMsg = null, tutorial = 0;
-  const blocks = $$("#start .tile-block").map((el) => ({ el, kind: el.dataset.block, hits: el.dataset.block === "multi" ? 8 : 1 }));
-  const docH = () => document.documentElement.scrollHeight, HUD = () => $("header").offsetHeight;
+  const docTop = (el) => el.getBoundingClientRect().top + scrollY;
+  const sprite = (name, cls = "") => { const el = Object.assign(document.createElement("img"), { src: SPR(name), alt: "" }); el.className = `rw-obj ${cls}`; return el; };
+  const flash = (el) => { if (!el) return; el.classList.remove("rw-flash"); void el.offsetWidth; el.classList.add("rw-flash"); };
 
-  /* ---------- reading the page as a level ---------- */
-  function pageBox(el, kind) {
-    const r = el.getBoundingClientRect();
-    return { el, kind, x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height };
-  }
-  function measure() {
-    T = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tile")) || 48;
-    P.w = T * 0.8; P.h = T;
-    const ok = (el) => el.offsetParent && !el.closest("dialog") && el.getBoundingClientRect().width > T * 0.6;
-    const solids = $$(SOLID).filter(ok);
-    plats = [...solids.map((el) => pageBox(el, "solid")), ...$$(ONEWAY).filter((el) => ok(el) && !solids.includes(el)).map((el) => pageBox(el, "oneway"))];
-    npcs = $$("[data-npc]").filter((el) => el.offsetParent && !el.classList.contains("hidden")).map((el) => pageBox(el, "npc"));
-    const vineEl = $("#vine")?.parentElement; G.vine = vineEl && pageBox(vineEl, "vine");
-    G.goal = pageBox($("#flagpole"), "goal"); G.door = { ...pageBox($("[data-door]"), "door") };
-    G.door.y -= T * 2; G.door.h += T * 2; // forgiving: jumping past the door still counts
-    G.pipe = plats.find((p) => p.el.matches("#start [data-pipe=out]"));
-    G.sections = $$("main > section").map((el) => ({ id: el.id, ...pageBox(el, "section") }));
-    world.style.height = `${docH()}px`;
-    [hero, follower, ghost].forEach((el) => { el.style.width = `${T}px`; el.style.height = `${T}px`; });
-    pickups.forEach((c) => c.place && c.place());
-  }
-  // a few coins float above each section heading
-  function makeCoins() {
-    $$(".px-heading, #projects > div > h2").forEach((h) => {
-      for (let i = 0; i < 3; i++) {
-        const el = Object.assign(document.createElement("img"), { src: SPR("coin"), alt: "" });
-        el.className = "sprite absolute left-0 top-0 animate-bob";
-        world.append(el);
-        const c = { el, got: false };
-        c.place = () => { const r = pageBox(h); Object.assign(c, { x: r.x + r.w + T * (0.6 + i * 0.9), y: r.y - T * 0.2, w: T * 0.43, h: T * 0.75 });
-          if (c.x + c.w > document.documentElement.clientWidth - 8) c.x = r.x + T * i * 0.9, c.y = r.y - T * 1.4;
-          el.style.width = `${c.w}px`; el.style.height = `${c.h}px`; el.style.transform = `translate(${c.x}px, ${c.y}px)`; };
-        pickups.push(c);
-      }
+  /* ---------- building the level from the page ---------- */
+  function build() {
+    const keep = new Map(objs.map((o) => [o.key, o.done]));
+    objLayer.innerHTML = ""; objs = [];
+    S = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--s")) || 32;
+    heroX = Math.round(Math.min(innerWidth * 0.28, 260));
+    const add = (type, anchor, key, extra = {}) => anchor && objs.push({ type, anchor, key: `${type}:${key}`, ...extra });
+
+    add("p2", $("#start h1"), 0);
+    $$("#start .px-btn").forEach((b, i) => add("coin", b, `start${i}`));
+    add("dino", $("#about article"), 0);
+    $$("#about ul.px-panel > li").forEach((li, i) => add("coin", li, `stat${i}`));
+    $$("#skill-groups > article").forEach((a, i) => add("qblock", a, i));
+    $$("#levels .level-card").forEach((c, i) => { add("bug", c, i); add("pipe", c, i); });
+    add("boss", $("#side-quests"), 0);
+    $$("#side-quests > article").forEach((a, i) => add("coin", a, `side${i}`));
+    $$("#timeline .checkpoint").forEach((li, i) => add("flag", li, i));
+    add("goal", $("#goal"), 0);
+    add("castle", $("#goal"), 0);
+    add("host", $("#contact-form"), 0);
+
+    // when should each object reach the hero? when its content sits ~45% down the screen
+    const anchorPx = innerHeight * 0.45, maxScroll = document.documentElement.scrollHeight - innerHeight;
+    objs.forEach((o, i) => { o.sy = Math.max(0, Math.min(maxScroll - 40, docTop(o.anchor) - anchorPx)); o.i = i; });
+    const host = objs.find((o) => o.type === "host"); if (host) host.sy = maxScroll; // the finale: reached at the very bottom
+    objs.sort((a, b) => a.sy - b.sy || a.i - b.i);
+    // world positions: keep a minimum gap so objects never pile up
+    const GAP = { coin: 1.2, qblock: 3, bug: 2.2, pipe: 3.2, boss: 4, flag: 3, goal: 3, castle: 4, host: 3, dino: 3, p2: 2 };
+    let wx = 0, sy = -1;
+    objs.forEach((o, i) => {
+      if (o.sy <= sy) o.sy = sy + 24; // same row on the page: spread them out a little in scroll
+      wx = i ? Math.max(wx + GAP[o.type] * S, wx + (o.sy - sy) * 0.6) : o.sy * 0.6 + 4 * S;
+      o.wx = wx; sy = o.sy;
+      o.done = keep.get(o.key) || false;
     });
+    pairs = [[0, objs[0].wx - objs[0].sy * 0.6], ...objs.map((o) => [o.sy, o.wx])];
+    pairs.push([sy + 100000, wx + 100000 * 0.6]);
+    objs.forEach(makeNode);
+    shownO = null;
+  }
+  // scroll position -> world offset (piecewise linear through every object's anchor)
+  function worldAt(y) {
+    for (let i = 1; i < pairs.length; i++) {
+      const [y0, w0] = pairs[i - 1], [y1, w1] = pairs[i];
+      if (y <= y1) return w0 + (w1 - w0) * ((y - y0) / Math.max(1, y1 - y0));
+    }
+    return pairs[pairs.length - 1][1];
+  }
+
+  function makeNode(o) {
+    let el, w = S, h = S, lift = 0;
+    switch (o.type) {
+      case "coin": el = sprite("coin"); w = S * 0.45; h = S * 0.8; lift = S * 0.15; break;
+      case "qblock": el = sprite(o.done ? "qblock-used" : "qblock"); lift = S * 1.8; break;
+      case "bug": el = sprite(o.done ? "bug-flat" : "bug-1"); h = S * 0.875; break;
+      case "boss": el = sprite(o.done ? "boss-flat" : "boss-1"); w = S * 1.7; h = S * 1.5; break;
+      case "pipe": el = document.createElement("div"); el.className = "rw-obj pipe cursor-pointer"; el.style.setProperty("--tile", `${S}px`); w = S * 1.75; h = S * 1.3;
+        el.title = "Open this project's system map"; el.addEventListener("click", () => enterPipe(o)); break;
+      case "flag": el = document.createElement("div"); el.className = "rw-obj"; w = S * 0.6; h = S * 1.8;
+        el.innerHTML = `<i class="absolute bottom-0 left-0 h-full w-[3px] bg-ink"></i><span class="rw-pennant" style="bottom:${o.done ? S * 1.25 : S * 0.1}px"></span>`; break;
+      case "goal": el = document.createElement("div"); el.className = "rw-obj"; w = S * 0.6; h = S * 2.8;
+        el.innerHTML = `<i class="absolute bottom-0 left-[6px] h-full w-[4px] bg-luigi-dark"></i><i class="absolute -top-1 left-[3px] h-2.5 w-2.5 rounded-full border-2 border-ink bg-luigi"></i><span class="rw-pennant" style="left:-12px;bottom:${o.done ? 2 : S * 2.2}px;border-left:0;border-right:16px solid #fff"></span>`; break;
+      case "castle": el = sprite("castle"); w = h = S * 2.8; break;
+      case "host": el = sprite("host"); break;
+      case "dino": el = sprite("dino", o.done ? "hidden" : ""); break;
+      case "p2": el = sprite("hero2-idle"); break;
+    }
+    Object.assign(o, { el, w, h, lift });
+    el.style.width = `${w}px`; el.style.height = `${h}px`; el.style.bottom = `${S + lift}px`;
+    if (o.type === "qblock" || o.type === "pipe") el.style.zIndex = "1";
+    objLayer.append(el);
   }
 
   /* ---------- reactions ---------- */
-  function hitBlock(b) {
-    bumpEl(b.el);
-    if (b.kind === "brick" || b.hits <= 0) { sfx.bump(); return; }
-    b.hits--; popCoin(b.el); sfx.coin(); addCoin(); addScore(200); if (tutorial === 2) tutorial = 3;
-    const r = b.el.getBoundingClientRect(); popScore("200", r.left + r.width / 4, r.top - 20);
-    if (b.hits === 0) setTimeout(() => { $("img", b.el).src = SPR("qblock-used"); b.el.setAttribute("aria-label", "Empty block"); }, 120);
-  }
-  blocks.forEach((b) => b.el.addEventListener("click", (e) => { e.stopPropagation(); hitBlock(b); }));
-  function bump(p) {
-    const el = p.el;
-    if (el.matches("#start .tile-block")) return hitBlock(blocks.find((b) => b.el === el));
-    if (el.matches(".qb")) return revealSkill(el.closest("[data-skill]"));
-    if (el.matches(".level-card > .tile-brick")) {
-      const card = el.parentElement, det = $("details", card);
-      bumpEl(card); popCoin(el); sfx.coin(); addCoin(); addScore(200);
-      if (det) { det.open = !det.open; setTimeout(measure, 50); }
-      return;
+  function jump(v = 9) { if (H.y <= 0.01) { H.vy = v * S; sfx.jump(); } }
+  function heroScreen() { const r = hero.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top }; }
+  function trigger(o, quiet) {
+    o.done = true;
+    const at = heroScreen();
+    switch (o.type) {
+      case "coin":
+        o.el.classList.add("invisible"); if (!quiet) { sfx.coin(); popScore("200", at.x, at.y - 30); } addCoin(); addScore(200);
+        flash(o.anchor.closest("li, article, .px-btn") || o.anchor); break;
+      case "qblock": {
+        if (!quiet) jump(8.5);
+        setTimeout(() => {
+          o.el.classList.remove("is-hit"); void o.el.offsetWidth; o.el.classList.add("is-hit"); o.el.src = SPR("qblock-used");
+          $$("[data-skill]", o.anchor).forEach((li) => revealSkill(li, true));
+          if (!quiet) { sfx.coin(); const r = o.el.getBoundingClientRect(); popScore($("h3", o.anchor)?.textContent || "SKILLS", r.left - 20, r.top - 18); }
+          flash(o.anchor);
+        }, quiet ? 0 : 160);
+        break;
+      }
+      case "bug":
+        if (!quiet) jump(8); o.el.src = SPR("bug-flat"); addScore(100); fixed++; $("#bugs-fixed").textContent = pad(fixed, 2);
+        if (!quiet) { sfx.stomp(); popScore("BUG FIXED", at.x - 30, at.y - 30); } break;
+      case "pipe": if (!quiet) jump(9); break; // hop over it; press down at it to enter
+      case "boss":
+        if (quiet) { o.el.src = SPR("boss-flat"); break; }
+        H.bounces = 3; o.hp = 3; jump(10); toast("BOSS: PROD INCIDENT! STOMPING IT...", 2200); break;
+      case "flag":
+        $(".rw-pennant", o.el).style.bottom = `${S * 1.25}px`; o.el.classList.add("is-done");
+        if (!quiet) { sfx.coin(); addScore(500); popScore("LEVEL CLEAR", at.x - 30, at.y - 30); }
+        flash($("article", o.anchor)); break;
+      case "goal":
+        $(".rw-pennant", o.el).style.bottom = "2px"; if (!goalDone) courseClear(); break;
+      case "dino":
+        o.el.classList.add("hidden"); G.dino = true; dino.classList.remove("hidden");
+        $("[data-npc=dino]")?.classList.add("invisible");
+        if (!quiet) { sfx.oneup(); toast("DINO JOINED YOUR PARTY!"); } break;
+      case "host": if (!quiet) { sfx.coin(); toast("HOST: THANKS FOR PLAYING! LEAVE A MESSAGE AND DIVESH WILL WRITE BACK.", 3800); } break;
+      default: break;
     }
-    sfx.bump();
   }
-  function stompOn(p) { // landing on something that does a thing
-    if (p.el.matches("[data-map]") && !document.querySelector("dialog[open]")) { keys.left = keys.right = false; p.el.click(); }
+  // stomp the boss three times: each landing while bouncing is a hit
+  function bossLand() {
+    const b = objs.find((o) => o.type === "boss"); if (!b) return;
+    b.hp--; sfx.stomp(); addScore(1000);
+    b.el.classList.remove("is-hit"); void b.el.offsetWidth; b.el.classList.add("is-hit");
+    const r = b.el.getBoundingClientRect(); popScore(b.hp ? "HIT!" : "INCIDENT RESOLVED", r.left, r.top - 20);
+    if (b.hp > 0) { H.vy = 10 * S; } else { b.el.src = SPR("boss-flat"); fireworks(4); sfx.flag(); toast("BOSS DEFEATED! +5000"); addScore(5000); }
   }
-  function meet(npc) {
-    const kind = npc.el.dataset.npc;
-    if (kind === "dino" && !G.dino) {
-      G.dino = true; npc.el.classList.add("invisible"); follower.classList.remove("hidden"); sfx.oneup();
-      toast("DINO JOINED YOUR PARTY! DOUBLE JUMP UNLOCKED"); measure();
-    } else if (kind === "host" && !G.hostMet) {
-      G.hostMet = true; sfx.coin(); hop(npc.el, npc.el, "npc");
-      toast("HOST: THANKS FOR PLAYING! LEAVE A MESSAGE AND DIVESH WILL WRITE BACK.", 3800);
-    }
+  function nearPipe() {
+    return objs.find((o) => o.type === "pipe" && Math.abs(heroX + S / 2 - (o.sx + o.w / 2)) < S * 1.4);
   }
-
-  /* ---------- enemies & boss walk along your content ---------- */
-  function spawnEnemy() {
-    const top = scrollY + HUD() + T * 2, bot = scrollY + innerHeight - T;
-    const spots = plats.filter((p) => p.kind === "oneway" && p.w > T * 4 && p.y > top && p.y < bot && p !== P.ground && !p.el.matches("[data-map], #brief-open"));
-    if (!spots.length) return;
-    const plat = spots[Math.floor(Math.random() * spots.length)], kind = Math.random() < 0.3 ? "turtle" : "bug", def = ENEMY[kind];
-    const el = Object.assign(document.createElement("img"), { src: SPR(def.frames[0]), alt: "", title: kind === "bug" ? "A bug. Stomp it!" : "Legacy code. Refactor it!" });
-    el.className = "absolute left-0 top-0 cursor-pointer select-none pointer-events-auto"; el.style.imageRendering = "pixelated";
-    el.style.width = `${T}px`; el.style.height = `${T * def.aspect}px`;
-    const en = { kind, def, el, plat, x: plat.x + Math.random() * (plat.w - T), w: T * 0.8, h: T * def.aspect, vx: (Math.random() < 0.5 ? -1 : 1) * def.speed * T, flat: 0, t: 0 };
-    el.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); squash(en); });
-    world.append(el); enemies.push(en);
-  }
-  function squash(en) {
-    if (en.flat) return;
-    en.flat = 0.7; en.el.src = SPR(en.def.flat); sfx.stomp(); addScore(en.def.points); if (tutorial === 3) tutorial = 4;
-    fixed++; $("#bugs-fixed").textContent = pad(fixed, 2);
-    const r = en.el.getBoundingClientRect(); popScore(en.def.label, r.left - 8, r.top - 18);
-    if (fixed === 10) { toast("10 FIXES. SHIP IT!"); fireworks(3); }
-  }
-  function spawnBoss() {
-    const plat = plats.find((p) => p.el.matches(".level-card > .tile-brick")); if (!plat || boss) return;
-    const el = Object.assign(document.createElement("img"), { src: SPR("boss-1"), alt: "", title: "Boss: PROD INCIDENT. Stomp it 3 times!" });
-    el.className = "absolute left-0 top-0 select-none"; el.style.imageRendering = "pixelated";
-    el.style.width = `${T * 1.6}px`; el.style.height = `${T * 1.4}px`;
-    boss = { el, plat, x: plat.x + plat.w / 2, w: T * 1.4, h: T * 1.3, vx: -1.2 * T, hp: 3, inv: 0, t: 0, down: false };
-    world.append(el); bossHp.classList.remove("hidden"); paintBossHp();
-    toast("BOSS: A PROD INCIDENT ON YOUR FIRST PROJECT! STOMP IT 3 TIMES", 3200);
-  }
-  function paintBossHp() { bossHp.innerHTML = [0, 1, 2].map((i) => `<i class="block h-2.5 w-2.5 border-2 border-ink ${i < boss.hp ? "bg-mario" : "bg-white"}"></i>`).join(""); }
-  function stompBoss() {
-    boss.hp--; boss.inv = 0.9; sfx.stomp(); addScore(1000); paintBossHp();
-    const r = boss.el.getBoundingClientRect(); popScore(boss.hp ? "HIT!" : "INCIDENT RESOLVED", r.left, r.top - 20);
-    if (!boss.hp) { G.bossDown = boss.down = true; boss.el.src = SPR("boss-flat"); bossHp.classList.add("hidden"); fireworks(5); sfx.flag(); toast("BOSS DEFEATED! +5000"); addScore(5000); }
-  }
-  function hurt(fromX, msg) {
-    P.hurt = 1.2; P.vx = (P.x < fromX ? -1 : 1) * 5 * T; P.vy = -7 * T; P.ground = null;
-    hero.classList.remove("is-hurt"); void hero.offsetWidth; hero.classList.add("is-hurt"); sfx.hurt(); toast(msg);
+  function enterPipe(o) {
+    const card = o.anchor, btn = $("[data-map]", card);
+    sfx.pipe(); flash(card);
+    if (btn) btn.click(); else card.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  /* ---------- placing the hero ---------- */
-  function spawnOnTitle() {
-    const c = blocks.find((b) => b.kind === "multi"), r = pageBox(c.el);
-    P.x = r.x + (r.w - P.w) / 2; P.y = r.y - P.h; P.vx = P.vy = 0; P.ground = plats.find((p) => p.el === c.el) || null;
-  }
-  // drop the hero in from the top of the screen, above whatever you're reading
-  function dropIn(prefer) {
-    const top = scrollY + HUD(), bot = scrollY + innerHeight;
-    const vis = plats.filter((p) => p.y > top + T * 2 && p.y < bot - T && p.w > T * 3 && !p.el.matches("[data-map], #brief-open, .qb, .pipe"));
-    const near = prefer ? vis.find((p) => p.el === prefer || p.el.contains(prefer)) : null;
-    const plat = near || vis.sort((a, b) => Math.abs(a.x + a.w / 2 - P.x) - Math.abs(b.x + b.w / 2 - P.x))[0];
-    P.x = plat ? Math.min(Math.max(P.x, plat.x + 4), plat.x + plat.w - P.w - 4) : P.x;
-    P.y = top + 4; P.vx = 0; P.vy = 0; P.ground = null; P.climb = false; trail = [];
-  }
-  function warpTo(sectionSel, prefer) {
-    if (warping) return;
-    warping = 0.7; hero.style.zIndex = "-1"; sfx.pipe();
-    setTimeout(() => {
-      $(sectionSel).scrollIntoView({ behavior: "instant", block: "start" });
-      setTimeout(() => { warping = 0; hero.style.zIndex = ""; measure(); dropIn(prefer); toast("WARP ZONE!"); }, 120);
-    }, 600);
-  }
-
-  /* ---------- play mode ---------- */
-  function setPlaying(on) {
-    G.playing = on; G.started ||= on;
-    playBtn.setAttribute("aria-pressed", on);
-    $("[data-label]", playBtn).textContent = on ? "Stop playing" : "Play the page";
-    playBtn.classList.toggle("bg-mario", !on); playBtn.classList.toggle("bg-ink", on);
-    if (TOUCH) padEl.classList.toggle("hidden", !on);
-    if (on) { if (tutorial === 0) tutorial = 1; measure(); if (!onScreen()) dropIn(); }
-    else { keys.left = keys.right = keys.jump = keys.down = keys.up = false; }
-  }
-  playBtn.addEventListener("click", () => { setPlaying(!G.playing); sfx.pipe(); });
-  hero.addEventListener("click", () => { if (!G.playing) setPlaying(true); });
-  $("#field").addEventListener("pointerdown", (e) => { if (!e.target.closest("button, [data-enemy]") && !G.playing) setPlaying(true); });
-  const KEYMAP = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "jump", KeyW: "jump", ArrowUp: "up", ArrowDown: "down", KeyS: "down" };
+  /* ---------- input: scroll is the main control ---------- */
+  const held = { left: false, right: false };
   addEventListener("keydown", (e) => {
-    if (e.code === "Escape" && G.playing) return setPlaying(false);
-    const k = KEYMAP[e.code];
-    if (!k || !G.playing || e.target.closest?.("input, textarea, dialog")) return;
-    e.preventDefault(); keys[k] = true;
-    if (k === "up" && !overVine()) keys.jump = true; // up jumps unless you're on the vine
+    if (e.target.closest?.("input, textarea, dialog, [contenteditable]") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.code === "ArrowRight" || e.code === "KeyD") { held.right = true; e.preventDefault(); }
+    else if (e.code === "ArrowLeft" || e.code === "KeyA") { held.left = true; e.preventDefault(); }
+    else if (e.code === "ArrowUp" || e.code === "KeyW") { jump(); e.preventDefault(); }
+    else if ((e.code === "ArrowDown" || e.code === "KeyS") && nearPipe()) { enterPipe(nearPipe()); e.preventDefault(); }
   });
-  addEventListener("keyup", (e) => { const k = KEYMAP[e.code]; if (!k) return; keys[k] = false; if (k === "up") keys.jump = false; });
-  addEventListener("blur", () => { keys.left = keys.right = keys.jump = keys.down = keys.up = false; });
-  $$("[data-pad]").forEach((btn) => {
-    const k = btn.dataset.pad;
-    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[k] = true; if (k === "jump") keys.up = true; });
-    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => btn.addEventListener(ev, () => { keys[k] = false; if (k === "jump") keys.up = false; }));
+  addEventListener("keyup", (e) => {
+    if (e.code === "ArrowRight" || e.code === "KeyD") held.right = false;
+    if (e.code === "ArrowLeft" || e.code === "KeyA") held.left = false;
   });
-  ["wheel", "touchmove"].forEach((ev) => addEventListener(ev, () => { userScrollT = 1.2; }, { passive: true }));
-  const onScreen = () => P.y + P.h > scrollY + HUD() && P.y < scrollY + innerHeight;
-  const overVine = () => G.vine && P.x + P.w / 2 > G.vine.x && P.x + P.w / 2 < G.vine.x + G.vine.w && P.y + P.h > G.vine.y && P.y < G.vine.y + G.vine.h;
+  addEventListener("blur", () => { held.left = held.right = false; });
+  runway.addEventListener("pointerdown", (e) => { if (!e.target.closest("button, .pipe")) jump(); });
 
-  // Player 2 cheers you on
-  const p2 = $("#p2"), p2img = $("img", p2);
-  const P2_LINES = ["PLAYER 2: RACE YOU TO THE FLAG!", "PLAYER 2: YOUR DINO IS ON THE STATUS CARD.", "PLAYER 2: SHIP IT!", "PLAYER 2: THE PROJECT CARDS HAVE BUGS. STOMP THEM."];
-  let p2Line = 0;
-  p2.addEventListener("click", (e) => { e.stopPropagation(); hop(p2, p2img, "hero2"); sfx.jump(); toast(P2_LINES[p2Line++ % P2_LINES.length]); });
-  if (!reducedMotion) setInterval(() => { if (!document.hidden && scrollY < innerHeight) hop(p2, p2img, "hero2"); }, 5200);
+  const setHidden = (off) => { document.body.classList.toggle("rw-off", off); $("#rw-show").classList.toggle("hidden", !off); store.set("sdb-rw-off", off); };
+  $("#rw-hide").addEventListener("click", () => setHidden(true));
+  $("#rw-show").addEventListener("click", () => setHidden(false));
+  setHidden(store.get("sdb-rw-off", false));
 
-  /* ---------- physics (page pixels, y grows downward) ---------- */
-  const xOver = (p) => P.x + P.w > p.x + 2 && P.x < p.x + p.w - 2;
-  const touches = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-  const NG = { x: 0, y: 0, t: 0, shy: false };
+  /* ---------- loop ---------- */
+  let lastSec = null;
+  function frame(now) {
+    const dt = Math.min(0.033, (now - (frame.last || now)) / 1000); frame.last = now;
+    if (held.right || held.left) scrollBy({ top: (held.right ? 1 : -1) * 520 * dt, behavior: "instant" });
+    const target = worldAt(scrollY);
+    if (shownO === null) shownO = target;
+    const prev = shownO;
+    const jumpBig = Math.abs(target - shownO) > innerWidth * 1.5; // nav click: skip the in-between quietly
+    shownO = jumpBig ? target : shownO + (target - shownO) * Math.min(1, dt * 10);
+    speed = speed * 0.8 + ((shownO - prev) / Math.max(dt, 0.001)) * 0.2;
+    if (Math.abs(shownO - prev) > 0.2) H.face = shownO > prev ? 1 : -1;
 
-  function step(dt) {
-    if (warping) { P.y += T * 1.6 * dt; return; }
-    // title pipe: down to warp to the projects
-    if (keys.down && G.pipe && P.ground === G.pipe) { P.x = G.pipe.x + (G.pipe.w - P.w) / 2; return warpTo("#projects", $("#levels")); }
+    // objects that reached the hero this frame
+    // an object reaches the hero when the world offset passes its position
+    for (const o of objs) if (!o.done && prev < o.wx && shownO >= o.wx) trigger(o, jumpBig);
+    // hero vertical physics
+    if (H.y > 0 || H.vy > 0) {
+      H.vy -= 34 * S * dt; H.y += H.vy * dt;
+      if (H.y <= 0) { H.y = 0; H.vy = 0; if (H.bounces > 0) { H.bounces--; bossLand(); } }
+    }
+    // draw
+    const W = runway.clientWidth;
+    for (const o of objs) {
+      o.sx = heroX + (o.wx - shownO) - o.w / 2 + S / 2 + (o.type === "host" ? S * 2.2 : 0);
+      const vis = o.sx > -o.w - 20 && o.sx < W + 20;
+      o.el.style.display = vis ? "" : "none";
+      if (!vis) continue;
+      o.el.style.transform = `translateX(${Math.round(o.sx)}px)`;
+      if (o.type === "bug" && !o.done) { const f = SPR(Math.floor(now / 220) % 2 ? "bug-1" : "bug-2"); if (!o.el.src.endsWith(f)) o.el.src = f; }
+      if (o.type === "boss" && !o.el.src.endsWith("boss-flat.svg")) { const f = SPR(Math.floor(now / 260) % 2 ? "boss-1" : "boss-2"); if (!o.el.src.endsWith(f)) o.el.src = f; }
+    }
+    $(".rw-ground", runway).style.backgroundPositionX = `${-Math.round(shownO)}px`;
 
-    const dir = P.hurt > 0.9 ? 0 : (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    if (dir) { P.vx += dir * (P.ground ? 40 : 24) * T * dt; P.face = dir; if (tutorial === 1) tutorial = 2; }
-    else { P.vx *= P.ground ? 0.78 : 0.96; if (Math.abs(P.vx) < T * 0.05) P.vx = 0; }
-    P.vx = Math.max(-6 * T, Math.min(6 * T, P.vx));
-    P.hurt = Math.max(0, P.hurt - dt);
-
-    // vine climbing
-    if (overVine() && (keys.up || keys.down) && !keys.jump) P.climb = true;
-    if (P.climb) {
-      if (!overVine() || keys.jump) P.climb = false;
-      else { P.vy = (keys.up ? -3 : keys.down ? 3 : 0) * T; P.vx *= 0.5; P.ground = null; }
+    let f = "hero-idle";
+    if (H.y > 0.01) f = "hero-jump";
+    else if (Math.abs(speed) > 20) { H.walkT += dt * Math.min(12, Math.abs(speed) / 40); f = Math.floor(H.walkT) % 2 ? "hero-walk1" : "hero-walk2"; }
+    if (!hero.src.endsWith(SPR(f))) hero.src = SPR(f);
+    hero.style.transform = `translate(${heroX}px, ${Math.round(runway.clientHeight - S - S - H.y)}px) scaleX(${H.face})`;
+    trail.push({ y: H.y, face: H.face }); if (trail.length > 10) trail.shift();
+    if (G.dino) {
+      const t = trail[0];
+      dino.style.transform = `translate(${heroX - H.face * S * 1.15}px, ${Math.round(runway.clientHeight - S - S - t.y)}px) scaleX(${t.face})`;
     }
 
-    // jump (double jump once the dino joins)
-    const pressed = keys.jump && !lastJump;
-    if (pressed && !P.climb && (P.ground || (G.dino && P.jumps === 1))) {
-      P.vy = (P.ground ? -13.5 : -11.5) * T; P.jumps = P.ground ? 1 : 2; P.ground = null; sfx.jump(); if (tutorial === 1) tutorial = 2;
+    // which world are we in?
+    const mid = scrollY + innerHeight * 0.45;
+    const sec = $$("main > section").find((el) => mid >= el.offsetTop && mid < el.offsetTop + el.offsetHeight) || $("#contact");
+    if (sec.id !== lastSec && SECTIONS[sec.id]) {
+      lastSec = sec.id; const info = SECTIONS[sec.id];
+      runway.dataset.theme = info.theme; worldLabel.textContent = info.name; tipLabel.textContent = info.tip;
     }
-    // down on a platform drops through it
-    if (keys.down && P.ground && P.ground.kind === "oneway" && !P.climb) { dropFrom = P.ground; dropT = 0.3; P.ground = null; P.y += 2; }
-    dropT = Math.max(0, dropT - dt);
-    if (!keys.jump && P.vy < -4 * T && !P.hurt) P.vy = -4 * T; // variable jump height
-    lastJump = keys.jump;
-    if (!P.climb) P.vy += (P.vy < 0 && keys.jump ? 30 : 48) * T * dt;
-    P.vy = Math.min(P.vy, 22 * T);
-
-    // horizontal move + solid sides
-    P.x += P.vx * dt;
-    P.x = Math.max(0, Math.min(document.documentElement.clientWidth - P.w, P.x));
-    for (const p of plats) {
-      if (p.kind !== "solid" || !xOver(p) || P.y + P.h <= p.y + 2 || P.y >= p.y + p.h - 2) continue;
-      P.x = P.vx > 0 ? p.x - P.w : p.x + p.w; P.vx = 0;
-    }
-    // vertical move: land on tops, bump solids from below
-    const prevTop = P.y, prevBot = P.y + P.h;
-    P.y += P.vy * dt;
-    if (P.ground && (!xOver(P.ground) || P.vy < 0)) P.ground = null;
-    if (P.ground) { P.y = P.ground.y - P.h; P.vy = 0; }
-    else if (P.vy >= 0) {
-      let land = null;
-      for (const p of plats) {
-        if (!xOver(p) || prevBot > p.y + 1 || P.y + P.h < p.y) continue;
-        if (p === dropFrom && dropT > 0) continue;
-        if (!land || p.y < land.y) land = p;
-      }
-      if (land) {
-        const jumped = P.jumps > 0; // only a deliberate jump presses buttons, not a drop-in
-        P.y = land.y - P.h; P.vy = 0; P.ground = land; P.jumps = 0; P.climb = false;
-        if (jumped && !(P.hurt > 0)) stompOn(land);
-      }
-    } else {
-      for (const p of plats) {
-        if (p.kind !== "solid" || !xOver(p) || prevTop < p.y + p.h - 1 || P.y > p.y + p.h) continue;
-        P.y = p.y + p.h; P.vy = 0; bump(p); break;
-      }
-    }
-    if (P.y + P.h > docH()) { P.y = docH() - P.h; P.vy = 0; }
-    const hb = { x: P.x + T * 0.1, y: P.y + T * 0.1, w: P.w - T * 0.2, h: P.h - T * 0.1 };
-
-    // coins, characters, goal, door
-    for (const c of pickups) {
-      if (c.got || !touches(hb, c)) continue;
-      c.got = true; c.el.remove(); sfx.coin(); addCoin(); addScore(200);
-      const r = c.el.getBoundingClientRect(); popScore("200", c.x - scrollX, c.y - scrollY - 16);
-    }
-    npcs.forEach((n) => touches(hb, n) && meet(n));
-    if (!goalDone && touches(hb, G.goal)) courseClear();
-    if (goalDone && touches(hb, G.door)) warpTo("#contact", $("[data-npc=host]"));
-
-    // enemies patrol their platform
-    if (G.playing && !reducedMotion && (nextEnemy -= dt) <= 0 && enemies.length < 3) { spawnEnemy(); nextEnemy = 4 + Math.random() * 4; }
-    for (const en of enemies) {
-      if (en.flat) { en.flat -= dt; continue; }
-      en.t += dt; en.x += en.vx * dt;
-      if (en.x < en.plat.x || en.x + en.w > en.plat.x + en.plat.w) { en.vx *= -1; en.x = Math.max(en.plat.x, Math.min(en.plat.x + en.plat.w - en.w, en.x)); }
-      en.y = en.plat.y - en.h;
-      if (!touches(hb, en)) continue;
-      if (P.vy > 0 && P.y + P.h < en.y + en.h * 0.6) { squash(en); P.vy = -9 * T; P.ground = null; P.jumps = 1; }
-      else if (!P.hurt) hurt(en.x + en.w / 2, en.kind === "bug" ? "A BUG GOT TO PROD! STOMP IT FROM ABOVE" : "LEGACY CODE BIT BACK! STOMP IT FROM ABOVE");
-    }
-    enemies = enemies.filter((en) => { const keep = !en.flat || en.flat > 0; if (!keep) en.el.remove(); return keep; });
-
-    // the boss shows up once you reach the projects
-    const sec = G.sections.find((s2) => P.y + P.h / 2 >= s2.y && P.y + P.h / 2 < s2.y + s2.h);
-    if (sec?.id === "projects" && G.playing && !G.bossDown && !boss) spawnBoss();
-    if (boss && !boss.down) {
-      boss.t += dt; boss.inv = Math.max(0, boss.inv - dt);
-      boss.x += boss.vx * dt * (boss.hp === 1 ? 1.7 : 1);
-      if (boss.x < boss.plat.x || boss.x + boss.w > boss.plat.x + boss.plat.w) { boss.vx *= -1; boss.x = Math.max(boss.plat.x, Math.min(boss.plat.x + boss.plat.w - boss.w, boss.x)); }
-      boss.y = boss.plat.y - boss.h;
-      if (touches(hb, boss) && !boss.inv) {
-        if (P.vy > 0 && P.y + P.h < boss.y + boss.h * 0.55) { stompBoss(); P.vy = -11 * T; P.ground = null; P.jumps = 1; }
-        else if (!P.hurt) hurt(boss.x + boss.w / 2, "THE INCIDENT ESCALATED! STOMP IT FROM ABOVE");
-      }
-    }
-    // a tip the first time you enter each section
-    if (sec && !G.seen.has(sec.id)) { G.seen.add(sec.id); if (TIPS[sec.id] && G.started) coachMsg = { ...TIPS[sec.id], t: 0, ttl: 7 }; }
-
-    if (night) {
-      NG.t += dt; const toHero = Math.sign(P.x - NG.x) || 1; NG.shy = P.face === -toHero;
-      if (!NG.shy) { NG.x += toHero * 1.1 * T * dt; NG.y += (P.y - T * 1.5 - NG.y) * 0.6 * dt; }
-    }
-    trail.push({ x: P.x, y: P.y, face: P.face }); if (trail.length > 24) trail.shift();
+    const pipe = nearPipe();
+    tipLabel.classList.toggle("!block", !!pipe); worldLabel.classList.toggle("max-sm:hidden", !!pipe); // phones: show the pipe hint in place of the world name
+    if (pipe) tipLabel.textContent = TOUCH ? `TAP THE PIPE: ${$("h3", pipe.anchor)?.textContent || "PROJECT"}` : `↓ ENTER: ${$("h3", pipe.anchor)?.textContent || "PROJECT"}`;
+    else if (lastSec && tipLabel.textContent.match(/^(↓ ENTER|TAP THE PIPE)/)) tipLabel.textContent = SECTIONS[lastSec].tip;
+    requestAnimationFrame(frame);
   }
-
-  /* ---------- drawing ---------- */
-  const TUTORIAL = () => [
-    null,
-    TOUCH ? "USE THE PAD: ◀ ▶ RUN · A JUMPS · ▼ DROPS" : `${kbd("←")}${kbd("→")} RUN · ${kbd("SPACE")} JUMP · ${kbd("↓")} DROP DOWN`,
-    { text: "JUMP INTO A ? BLOCK<br>FROM BELOW", target: () => blocks.find((b) => b.kind !== "brick" && b.hits > 0)?.el },
-    { text: "BUGS LIVE ON YOUR CONTENT.<br>STOMP ONE FROM ABOVE", target: () => enemies.find((en) => !en.flat)?.el },
-    { text: `NOW EXPLORE! WALK THE PAGE,<br>OR ${kbd("↓")} ON THE PIPE TO WARP`, target: () => G.pipe?.el, ttl: 6 },
-  ];
-  function currentCoach() {
-    if (!G.started) return { text: TOUCH ? "TAP ME TO PLAY!" : "CLICK ME TO PLAY!" };
-    if (coachMsg && coachMsg.t < coachMsg.ttl) return coachMsg;
-    if (tutorial >= 1 && tutorial <= 4 && P.y < innerHeight * 1.2) {
-      const t = TUTORIAL()[tutorial]; return typeof t === "string" ? { text: t } : t;
-    }
-    return null;
-  }
-  function placeCoach(dt) {
-    const c = currentCoach();
-    if (coachMsg) coachMsg.t += dt;
-    if (tutorial === 4) { G.tutT = (G.tutT || 0) + dt; if (G.tutT > 6) tutorial = 5; }
-    if (!c) { coach.classList.remove("is-shown"); pointer.classList.add("hidden"); return; }
-    if (coach.dataset.text !== c.text) { coach.innerHTML = c.text; coach.dataset.text = c.text; }
-    coach.classList.add("is-shown");
-    const vw = document.documentElement.clientWidth, cw = coach.offsetWidth, ch = coach.offsetHeight, hx = P.x + P.w / 2;
-    const left = Math.max(8, Math.min(vw - cw - 8, hx - cw / 2));
-    coach.style.transform = `translate(${Math.round(left)}px, ${Math.round(P.y - ch - 14)}px)`;
-    coach.style.setProperty("--tail", `${Math.round(hx - left)}px`);
-    const tgt = c.target?.();
-    if (tgt && tgt.offsetParent) {
-      const r = tgt.getBoundingClientRect();
-      pointer.style.translate = `${Math.round(r.left + scrollX + r.width / 2 - 10)}px ${Math.round(r.top + scrollY - 22)}px`;
-      pointer.classList.remove("hidden");
-    } else pointer.classList.add("hidden");
-  }
-  function render(dt) {
-    let frame = "hero-idle";
-    if (P.climb) frame = Math.floor(performance.now() / 180) % 2 ? "hero-walk1" : "hero-jump";
-    else if (!P.ground) frame = "hero-jump";
-    else if (Math.abs(P.vx) > T * 0.3) { walkT += dt * Math.abs(P.vx / T) * 2.2; frame = Math.floor(walkT) % 2 ? "hero-walk1" : "hero-walk2"; }
-    const src = SPR(frame); if (!hero.src.endsWith(src)) hero.src = src;
-    hero.style.transform = `translate(${Math.round(P.x - (T - P.w) / 2)}px, ${Math.round(P.y)}px) scaleX(${P.face})`;
-    if (G.dino && trail.length) {
-      const f = trail[0];
-      follower.style.width = follower.style.height = `${T}px`;
-      follower.style.transform = `translate(${Math.round(f.x - f.face * T * 1.1)}px, ${Math.round(f.y)}px) scaleX(${f.face})`;
-    }
-    for (const en of enemies) {
-      if (!en.flat) { const f = SPR(en.def.frames[Math.floor(en.t * 5) % 2]); if (!en.el.src.endsWith(f)) en.el.src = f; }
-      en.el.style.transform = `translate(${Math.round(en.x - T * 0.1)}px, ${Math.round(en.y)}px) scaleX(${en.vx > 0 ? -1 : 1})`;
-    }
-    if (boss) {
-      if (!boss.down) { const f = SPR(Math.floor(boss.t * 4) % 2 ? "boss-1" : "boss-2"); if (!boss.el.src.endsWith(f)) boss.el.src = f; }
-      boss.el.style.opacity = boss.inv && Math.floor(boss.inv * 10) % 2 ? ".4" : "1";
-      boss.el.style.transform = `translate(${Math.round(boss.x - T * 0.1)}px, ${Math.round(boss.y - T * 0.1)}px) scaleX(${boss.vx > 0 ? -1 : 1})`;
-      bossHp.style.transform = `translate(${Math.round(boss.x + boss.w / 2 - 20)}px, ${Math.round(boss.y - T * 0.5)}px)`;
-    }
-    placeCoach(dt);
-    if (night) {
-      ghost.classList.remove("hidden");
-      const g = SPR(NG.shy ? "ghost-shy" : "ghost"); if (!ghost.src.endsWith(g)) ghost.src = g;
-      ghost.style.transform = `translate(${Math.round(NG.x)}px, ${Math.round(NG.y + Math.sin(NG.t * 3) * 3)}px) scaleX(${P.x > NG.x ? 1 : -1})`;
-    } else ghost.classList.add("hidden");
-  }
-
-  /* ---------- loop: physics, camera, and keeping the hero with you ---------- */
-  function loop(now) {
-    const dt = Math.min(0.033, (now - (loop.last || now)) / 1000); loop.last = now;
-    if (!document.querySelector("dialog[open]")) {
-      userScrollT = Math.max(0, userScrollT - dt);
-      if (!onScreen() && userScrollT === 0 && !warping) { measure(); dropIn(); }
-      step(dt);
-      if (G.playing && userScrollT === 0 && !warping) { // camera follows the hero
-        const want = P.y + P.h / 2 - innerHeight * 0.55, d = want - scrollY;
-        if (Math.abs(d) > 4) scrollTo({ top: scrollY + d * Math.min(1, dt * 6), behavior: "instant" });
-      }
-      render(dt);
-    }
-    requestAnimationFrame(loop);
-  }
-  ["hero-walk1", "hero-walk2", "hero-jump", "hero2-jump", "qblock-used", "bug-2", "bug-flat", "turtle-1", "turtle-2", "shell", "ghost-shy", "boss-2", "boss-flat", "dino"]
+  ["hero-walk1", "hero-walk2", "hero-jump", "qblock-used", "bug-2", "bug-flat", "boss-2", "boss-flat", "dino", "castle", "host", "hero2-idle"]
     .forEach((n) => { new Image().src = SPR(n); });
-  new ResizeObserver(() => measure()).observe(document.body);
-  setInterval(() => { if (G.playing) measure(); }, 600); // content can move (details open, fonts, images)
-  (document.fonts?.ready ?? Promise.resolve()).then(() => { measure(); makeCoins(); measure(); spawnOnTitle(); requestAnimationFrame(loop); });
+  let rebuildT;
+  const rebuild = () => { clearTimeout(rebuildT); rebuildT = setTimeout(build, 150); };
+  new ResizeObserver(rebuild).observe(document.body);
+  (document.fonts?.ready ?? Promise.resolve()).then(() => { build(); requestAnimationFrame(frame); });
 
   /* ================= recruiter brief ================= */
   const brief = $("#brief");

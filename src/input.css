@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 @layer base {
-  :root { --tile: 32px; --hud: 88px; --sky: 92 148 252; }
+  :root { --tile: 32px; --hud: 88px; --sky: 92 148 252; --s: 28px; }
+  @media (min-width: 640px) { :root { --s: 32px; } }
+  body { padding-bottom: calc(var(--s) * 4.5); }
+  body.rw-off { padding-bottom: 0; }
   html.night { --sky: 20 26 72; color-scheme: dark; }
   html.night .cloud { opacity: .35; }
   html:not(.night) .stars { display: none; }
@@ -127,6 +130,24 @@
   .toast { @apply pointer-events-none fixed left-1/2 top-[calc(var(--hud)+16px)] z-50 -translate-x-1/2 -translate-y-4 border-3 border-white bg-ink px-4 py-3 text-center font-pixel text-px-xs text-white opacity-0 transition-[opacity,transform] duration-200; box-shadow: 0 0 0 3px #000; }
   .toast.is-shown { @apply translate-y-0 opacity-100; }
   .spark { @apply pointer-events-none fixed z-50 h-2 w-2 animate-burst; }
+
+  /* ---- the runway: fixed level strip ---- */
+  .runway { @apply fixed inset-x-0 bottom-0 z-[35] overflow-hidden border-t-3 border-ink transition-[background-color,transform] duration-500; height: calc(var(--s) * 4.5); background: #5C94FC; touch-action: pan-y; }
+  .runway[data-theme=night] { background: #141a48; }
+  .runway[data-theme=underground] { background: #000; }
+  .runway[data-theme=castle] { background: #2a2a2a; }
+  .rw-off .runway { transform: translateY(110%); }
+  .rw-ground { @apply absolute inset-x-0 bottom-0; height: var(--s); background: url(sprites/ground.svg) 0 0 / var(--s) var(--s) repeat-x; }
+  .runway[data-theme=underground] .rw-ground { background-image: url(sprites/brick-blue.svg); }
+  .runway[data-theme=castle] .rw-ground, .runway[data-theme=night] .rw-ground { background-image: url(sprites/brick.svg); }
+  .rw-sprite { @apply pointer-events-none absolute left-0 top-0 select-none; width: var(--s); height: var(--s); image-rendering: pixelated; }
+  .rw-label { @apply pointer-events-none absolute top-2 z-10 font-pixel text-[8px] leading-4 text-white; text-shadow: 1px 1px 0 #000; }
+  .rw-obj { @apply absolute bottom-0 left-0 select-none; image-rendering: pixelated; will-change: transform; }
+  .rw-obj.is-hit { @apply animate-bump; }
+  .rw-flash { animation: rwflash 1s steps(4) 1; }
+  @keyframes rwflash { 0%, 50% { outline: 4px solid #F8B800; outline-offset: 4px; } 100% { outline: 4px solid transparent; outline-offset: 4px; } }
+  .rw-pennant { @apply absolute h-0 w-0 transition-[bottom] duration-500; left: 3px; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 14px solid #9ca3af; }
+  .rw-obj.is-done .rw-pennant { border-left-color: #00B259; }
 
   /* Konami reward */
   .star-power #hero, .star-power .px-heading, .star-power #walker { @apply animate-rainbow; }

@@ -99,33 +99,15 @@
         </div>
         <button type="button" id="brief-open" class="mt-6 border-b-2 border-dashed border-white pb-1 font-pixel text-px-xs text-white hover:border-coin hover:text-coin" style="text-shadow:2px 2px 0 #000">RECRUITER? READ THE 30-SECOND VERSION</button>
         <p class="mt-5 font-pixel text-px-xs text-white" style="text-shadow:2px 2px 0 #000">TOP- <span id="top-score">000000</span> · BUGS FIXED <span id="bugs-fixed">00</span></p>
+        <p class="mt-6 animate-blink font-pixel text-px-xs text-cream" style="text-shadow:2px 2px 0 #000">▼ SCROLL TO RUN THE LEVEL ▼</p>
       </div>
 
-      <!-- playfield: bugs crawl out of the pipe; stomp them -->
-      <div id="field"
-           aria-label="Starting area of the game"
-           class="relative mt-6 h-[calc(var(--tile)*7)] cursor-pointer outline-none [touch-action:manipulation]">
-        <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[18%] w-20 animate-drift sm:w-28" />
-        <img src="assets/sprites/cloud.svg" alt="" aria-hidden="true" class="cloud sprite absolute left-0 top-[40%] w-16 animate-drift [animation-delay:-55s] sm:w-24" />
-        <img src="assets/sprites/hill.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[2%] w-[calc(var(--tile)*5)]" />
-        <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 left-[22%] hidden w-[calc(var(--tile)*3)] sm:block" />
-        <img src="assets/sprites/bush.svg" alt="" aria-hidden="true" class="sprite absolute bottom-0 right-[22%] w-[calc(var(--tile)*2)] sm:w-[calc(var(--tile)*3)]" />
-        <button type="button" id="p2" class="absolute bottom-0 left-[9%] z-10 h-[var(--tile)] w-[var(--tile)]" aria-label="Player 2"><img src="assets/sprites/hero2-idle.svg" alt="" class="sprite h-full w-full" /></button>
-        <div class="pipe absolute bottom-0 right-[6%] z-10 h-[calc(var(--tile)*2)]" data-solid data-pipe="out" title="Warp pipe: stand on it and press down to jump to the projects" aria-hidden="true"></div>
-
-        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% - var(--tile)*2.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
-        <button type="button" class="tile-block" style="left:calc(50% - var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
-        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% - var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="multi" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
-        <button type="button" class="tile-block" style="left:calc(50% + var(--tile)*0.5);bottom:calc(var(--tile)*3)" data-block="brick" aria-label="Brick block"><img src="assets/sprites/brick.svg" alt="" /></button>
-        <button type="button" class="tile-block" title="Click me, or jump into me from below" style="left:calc(50% + var(--tile)*1.5);bottom:calc(var(--tile)*3)" data-block="coin" aria-label="Question block"><img src="assets/sprites/qblock.svg" alt="" /></button>
-
-        <img id="ghost" src="assets/sprites/ghost.svg" alt="" aria-hidden="true" class="sprite absolute left-0 top-0 z-[15] hidden h-[var(--tile)] w-[var(--tile)]" />
-        <img id="hero" src="assets/sprites/hero-idle.svg" alt="Divesh, pixel-art avatar" class="sprite absolute left-0 top-0 z-20 h-[var(--tile)] w-[var(--tile)] will-change-transform" />
-
-        <div id="coach" class="coach" role="status" aria-live="polite"></div>
-        <div id="pointer" class="pointer-arrow hidden" aria-hidden="true"></div>
+      <div class="relative mt-10 h-[calc(var(--tile)*2.5)]" aria-hidden="true">
+        <img src="assets/sprites/hill.svg" alt="" class="sprite absolute bottom-0 left-[2%] w-[calc(var(--tile)*5)]" />
+        <img src="assets/sprites/bush.svg" alt="" class="sprite absolute bottom-0 left-[30%] hidden w-[calc(var(--tile)*3)] sm:block" />
+        <img src="assets/sprites/bush.svg" alt="" class="sprite absolute bottom-0 right-[24%] w-[calc(var(--tile)*2)] sm:w-[calc(var(--tile)*3)]" />
+        <div class="pipe absolute bottom-0 right-[6%] h-[calc(var(--tile)*2)]"></div>
       </div>
-
       <div class="tile-ground h-[calc(var(--tile)*2)]" aria-hidden="true"></div>
     </section>
 
@@ -324,11 +306,8 @@
     </div>
   </footer>
 
-  <button type="button" id="play" class="px-btn fixed bottom-4 left-4 z-40 bg-mario px-3 py-3 text-px-xs text-white" aria-pressed="false">
-    <img src="assets/sprites/hero-idle.svg" alt="" class="h-5 w-5" /><span data-label>Play the page</span>
-  </button>
 
-  <a href="#start" id="to-top" class="px-btn fixed bottom-4 right-4 z-30 translate-y-24 bg-luigi px-3 py-3 text-px-xs text-white opacity-0 transition-[transform,opacity] [&.is-shown]:translate-y-0 [&.is-shown]:opacity-100" aria-label="Back to top">TOP</a>
+  <a href="#start" id="to-top" class="px-btn fixed bottom-[calc(var(--s)*4.5+16px)] right-4 z-30 translate-y-24 bg-luigi px-3 py-3 text-px-xs text-white opacity-0 transition-[transform,opacity] [&.is-shown]:translate-y-0 [&.is-shown]:opacity-100" aria-label="Back to top">TOP</a>
   <dialog id="brief" aria-labelledby="brief-title" class="m-auto w-[min(680px,calc(100%-32px))] max-h-[calc(100dvh-32px)] overflow-y-auto bg-transparent p-0 backdrop:bg-ink/70">
     <div class="px-panel p-6 sm:p-8">
       <div class="flex items-start justify-between gap-4">
@@ -377,16 +356,18 @@
     </div>
   </dialog>
 
-  <div id="pad" class="fixed inset-x-4 bottom-20 z-40 hidden justify-between [@media(pointer:coarse)]:flex" aria-hidden="true">
-    <div class="flex gap-3">
-      <button type="button" class="pad-btn" data-pad="left" tabindex="-1">◀</button>
-      <button type="button" class="pad-btn" data-pad="right" tabindex="-1">▶</button>
-    </div>
-    <div class="flex gap-3">
-      <button type="button" class="pad-btn" data-pad="down" tabindex="-1">▼</button>
-      <button type="button" class="pad-btn rounded-full bg-mario text-white" data-pad="jump" tabindex="-1">A</button>
-    </div>
+
+  <!-- THE GAME: a fixed level strip. Scrolling the page makes the hero run through it. -->
+  <div id="runway" class="runway" data-theme="sky" role="region" aria-label="Game strip: scroll the page to run through the level">
+    <div id="rw-objs" class="absolute inset-0" aria-hidden="true"></div>
+    <img id="dino-follower" src="assets/sprites/dino.svg" alt="" class="rw-sprite hidden" aria-hidden="true" />
+    <img id="hero" src="assets/sprites/hero-idle.svg" alt="Divesh, pixel-art avatar" class="rw-sprite" />
+    <p id="rw-world" class="rw-label left-3"></p>
+    <p id="rw-tip" class="rw-label right-20 hidden text-right sm:block"></p>
+    <button type="button" id="rw-hide" class="absolute right-2 top-2 z-10 border-2 border-white bg-ink/60 px-1.5 py-1 font-pixel text-[8px] text-white hover:bg-white hover:text-ink">HIDE</button>
+    <div class="rw-ground" aria-hidden="true"></div>
   </div>
+  <button type="button" id="rw-show" class="px-btn fixed bottom-4 left-4 z-40 hidden bg-mario px-3 py-2 text-px-xs text-white"><img src="assets/sprites/hero-idle.svg" alt="" class="h-4 w-4" />Show game</button>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="fx" aria-hidden="true"></div>
