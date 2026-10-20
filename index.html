@@ -236,12 +236,9 @@
       <div class="mx-auto max-w-6xl px-4">
         <p class="px-kicker !text-brick ![text-shadow:none]">World 1-4 · Level Select</p>
         <h2 class="mt-4 font-pixel text-px-lg text-ink sm:text-px-xl">PROJECT SELECT</h2>
-        <p class="mt-4 max-w-2xl text-ink/80">Each level says why the system exists, how data flows through it, and what I built. These main quests are Contentstack work; side quests are further down.</p>
+        <p class="mt-4 max-w-2xl text-ink/80">Each level says why the work matters, what I did, and the impact. These main quests are Contentstack work; side quests, my own open-source projects, are further down.</p>
 
-        <ol class="relative mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2 lg:grid-cols-3" id="levels">
-          <li aria-hidden="true" class="pointer-events-none absolute inset-x-[12%] top-[calc(var(--tile)/2)] hidden h-0 border-t-4 border-dotted border-brick/50 lg:block"></li>
-          <li aria-hidden="true" class="pointer-events-none absolute left-[12%] right-[45%] top-[calc(50%+var(--tile)/2)] hidden h-0 border-t-4 border-dotted border-brick/50 lg:block"></li>
-        </ol>
+        <ol class="relative mt-14 space-y-14" id="levels"></ol>
 
         <div class="mt-24 flex items-end gap-4">
           <div class="pipe h-[calc(var(--tile)*1.5)] shrink-0 [--tile:32px]" aria-hidden="true"></div>
@@ -375,7 +372,7 @@
         <form method="dialog"><button class="border-2 border-white px-2 py-2 font-pixel text-px-xs hover:bg-white hover:text-ink" aria-label="Close">CLOSE</button></form>
       </div>
       <ul class="mt-6 space-y-3 text-white/90">
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Built Contentstack's <strong class="text-white">Go audit-logging platform</strong> for its move from a single-product MongoDB log to multi-tenant Elasticsearch: billions of logs, 6 products and every new customer onboarded.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Built Contentstack's <strong class="text-white">Go audit-logging platform</strong> for its multi-product, multi-tenant redesign: billions of logs searchable, 6 products and every new customer onboarded.</li>
         <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Spark ETL pipelines and the <strong class="text-white">Analytics API</strong> every customer uses, behind 2B+ monthly API calls; some customers pull it into their own dashboards.</li>
         <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Production ownership</strong>: RCAs for a Kafka surge, the Kafka upgrade and the OpenSearch → Elastic Cloud move; Observe dashboards with Slack alerts; cleared 5,000+ long-open CVEs across 10 services.</li>
         <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Content operations analytics</strong> on legacy data (where work is stuck and with whom), proven by a Playwright Evaluator across 67 operation-sequence cases.</li>

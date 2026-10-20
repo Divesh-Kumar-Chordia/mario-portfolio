@@ -27,41 +27,67 @@
     { item: "? BLOCK", sprite: "qblock", kind: "AI-first workflow", skills: ["Claude Skills", "MCP", "Cursor", "Agent Mode", "Rules & hooks"] },
   ];
 
-  // Each level: why the system exists, how data flows, what I built.
+  // Company work: why it matters, what I did, and the impact. No internal system flows (not public).
   const LEVELS = [
-    { quest: "main", map: "audit", title: "AUDIT LOGGING PLATFORM", stat: "BILLIONS OF LOGS · 6 PRODUCTS",
-      why: "Customers need a searchable record of every audit, webhook and publish event. When Contentstack grew from a single product on MongoDB into a multi-product platform, that record had to move to a multi-tenant Elasticsearch design holding billions of logs, without the cost exploding.",
-      flow: ["PRODUCTS", "KAFKA", "LOGS CONSUMER", "ES · MONTHLY INDEX", "LOGS SERVICE · GRPC", "CUSTOMER QUERY"],
-      built: "I built the Go services behind the redesign. Logs Consumer moves events from Kafka into Elasticsearch, with a per-product index and a common log format, and creates a fresh index every month. Logs Service answers queries over gRPC through an index alias, translating Mongo-style queries into Elasticsearch ones. Go worker pools with mutex-guarded shared state let both scale on very little hardware, and an ILM policy ages data from hot to warm to cold. I onboarded 6 products and every new customer's audit and webhook logs in the multi-tenant setup (ingestion, index templates and the admin filter UI), and added multi-topic Kafka support, $exists in the translator, and a direct Elasticsearch path for queries the translator can't express.",
-      tags: ["Go", "Kafka", "Elasticsearch", "gRPC"] },
-    { quest: "main", map: "webhooks", title: "WEBHOOK DELIVERY", stat: "75+ COMBINATIONS FOR VARIANTS ALONE",
-      why: "Customers plug Contentstack into their own systems. When content changes, their endpoint has to hear about it, even when their server is having a bad day.",
-      flow: ["STACK EVENT", "TRIGGER", "EXECUTOR", "CUSTOMER URL"],
-      fail: "RETRY QUEUE · 3 TRIES · FAILED STORE + NOTIFIER",
-      built: "A four-stage pipeline: the trigger checks each webhook's conditions, the executor sends the event to the customer's URL, failed sends wait in a retry queue, and after three failed attempts the event is stored as failed and a notification goes out. The Variants and Taxonomy launches needed major changes to this code: I added 75+ scope-and-action combinations for entry variants alone, with no breaking changes for existing customer integrations.",
-      tags: ["Event-driven", "Retry queue", "API design"] },
-    { quest: "main", map: "analytics", title: "ANALYTICS PIPELINE & API", stat: "2B+ API CALLS / MONTH",
-      why: "Customers want to know how their stack is used: API calls, bandwidth, status codes, cache hits and misses, devices. All of it starts as raw CDN and platform traffic.",
-      flow: ["CLOUDFLARE + KAFKA", "SPARK ETL", "ELASTICSEARCH", "ANALYTICS API", "DASHBOARDS"],
-      built: "I build Spark ETL pipelines that aggregate around a billion records from sources like Cloudflare and Kafka and persist them in Elasticsearch. On top sits the customer-facing Analytics API, which every customer has enabled and some pull straight into their own internal dashboards. I onboard new products and analytics domains, merge sources without changing the contract customers rely on, reconciled output inconsistencies from legacy foundations, and replaced generic failures with errors that explain what went wrong.",
-      tags: ["Apache Spark", "Elasticsearch", "Kafka", "API design"] },
-    { quest: "main", map: "contentops", title: "CONTENT OPERATIONS ANALYTICS", stat: "67 OPERATION-SEQUENCE CASES",
-      why: "Content teams need to see where entries get stuck in a workflow and who they are stuck with, who is active or inactive, and whether content actually follows its workflows. The legacy core product allows only single-level joins, has no reliable timestamps, and entry counts multiply across branch × content type × locale.",
-      flow: ["LEGACY MONGO", "INDEXED DAILY SCAN", "COUNTS", "DASHBOARDS", "EVALUATOR"],
-      built: "A low-cost daily scan that runs on Mongo indexes instead of deep joins. It powers three surfaces, now rolling out: Content Life Cycle (created → ready to publish → published), Workflow Health (where content is stuck and with whom) and Team Adoption (active vs inactive users, work velocity and project metrics). To prove the numbers, I built an Evaluator: it seeds realistic data, reads the dashboards through Playwright (DOM and screenshots) and compares every count with what the product rules say it should be. The analytics are validated against 67 operation-sequence cases, including orphaned-record edge cases.",
-      tags: ["MongoDB", "Elasticsearch", "Playwright"] },
-    { quest: "main", map: "discovery", title: "PLATFORM DISCOVERY", stat: "PAY VS USE · UPSELL SIGNAL",
-      why: "Customers couldn't easily see what they pay for versus what they actually use, and PMs and customer success had no clear view of which features an account hadn't bought yet. The answer was scattered across many systems.",
-      flow: ["ES + MONGO + AUDIT + METERING", "9 USAGE PROCESSORS", "17 CAPABILITIES", "REACT PACKAGE", "3 APPS"],
-      built: "I owned it end to end across 8 repositories: a template-driven service that resolves 17 capabilities through 9 usage processors over Elasticsearch, MongoDB, audit logs and metering. Multi-cluster resolution fixed under-reporting for sharded organizations. Customers now compare what they pay for with what they use to optimize cost, PMs and CSMs spot features to upsell, and anyone in the org can see its product and feature adoption. I extracted the UI into @contentstack/platform-discovery, a versioned React package used by 3 production applications.",
-      tags: ["NestJS", "React", "Elasticsearch", "MongoDB"] },
+    { title: "AUDIT LOGGING PLATFORM", sprite: "mushroom", tags: ["Go", "Kafka", "Elasticsearch", "gRPC", "Multi-tenant"],
+      why: "Customers need a searchable record of every audit, webhook and publish event. When Contentstack grew from one product into a multi-product platform, the original single-product audit log could not keep up: logging had to be redesigned to serve every product and every customer, at scale and at low cost.",
+      did: [
+        "Built the Go services behind the redesigned, multi-tenant audit logging platform: multithreaded and low-resource, keeping billions of logs searchable.",
+        "Onboarded 6 products and every new customer's audit and webhook logs onto it.",
+        "Added multi-topic Kafka support and a direct Elasticsearch query path, so teams can run complex queries the legacy translator couldn't express.",
+        "Primary point of contact in production: lead root-cause analysis and carry the platform through upgrades and migrations.",
+      ],
+      impact: [["BILLIONS", "of logs kept searchable", "audit, webhook and publish events"], ["6", "products onboarded", "plus every new customer"], ["LOW COST", "at high performance", "multithreaded, low-resource Go"]] },
+    { title: "ANALYTICS PIPELINES & API", sprite: "oneup", tags: ["Apache Spark", "Elasticsearch", "Kafka", "AWS Athena", "API design"],
+      why: "Customers want to know how their stack is used: API calls, bandwidth, status codes, cache hits and misses, devices. That data starts as raw traffic and has to arrive as numbers customers can trust, in the product and through an API they can build on.",
+      did: [
+        "Build the Spark ETL pipelines that turn about a billion raw records into the usage analytics customers see.",
+        "Own the customer-facing Analytics API: onboard new products and analytics domains without changing the contract customers build on.",
+        "Reconciled output inconsistencies from legacy foundations and replaced generic failures with errors that explain what went wrong.",
+        "Took the Top URLs export (the most-hit URLs, computed in Athena SQL) from failing beyond 1,000 records to 10,000+, with a precheck that flags failures before a job runs.",
+      ],
+      impact: [["2B+", "API calls a month", "turned into customer analytics"], ["EVERY", "customer has the API enabled", "some feed it into their own dashboards"], ["10x", "larger Top URLs exports", "1,000 → 10,000+ records"]] },
+    { title: "CONTENT OPERATIONS ANALYTICS", sprite: "fireflower", tags: ["MongoDB", "Elasticsearch", "Playwright", "Data quality"],
+      why: "Content teams need to see where work gets stuck in a workflow and who it's stuck with, who is active or inactive, and whether content follows its workflows. The legacy core product has no reliable timestamps and only single-level joins, which makes accurate numbers hard.",
+      did: [
+        "Built the analytics behind three product surfaces, now rolling out: Content Life Cycle, Workflow Health and Team Adoption.",
+        "Kept them accurate and low-cost despite the legacy data model.",
+        "Built a Playwright Evaluator that checks every dashboard count against what the product rules say it should be, so wrong numbers are caught before customers see them.",
+      ],
+      impact: [["100K+", "entries per organization", "with millions of daily publishes"], ["67", "operation-sequence test cases", "checked by the Evaluator"], ["3", "product surfaces", "life cycle, workflow health, team adoption"]] },
+    { title: "FEATURE ADOPTION", sprite: "star", tags: ["NestJS", "React", "Micro-frontend", "MongoDB"],
+      why: "Customers couldn't easily see what they pay for versus what they actually use, and PMs and customer success had no clear view of which features an account hadn't adopted.",
+      did: [
+        "Owned it from ideation to production: one usage view across audit trails, metering data and analytics.",
+        "Customers compare what they pay for with what they use to optimize cost; PMs and CSMs spot features to upsell; anyone in the org can see its adoption.",
+        "Fixed under-reporting for sharded organizations.",
+        "Shipped as a reusable package and micro-frontend, now used by 3 production applications.",
+      ],
+      impact: [["PAY vs USE", "cost visibility for customers", "what they pay for vs what they use"], ["UPSELL", "signal for PMs and CSMs", "features an account hasn't adopted"], ["3", "production apps reuse it", "package + micro-frontend"]] },
+    { title: "WEBHOOKS", sprite: "coin", tags: ["Node.js", "Event-driven", "API design"],
+      why: "Customers plug Contentstack into their own systems. When content changes, their integrations have to fire for exactly the right events.",
+      did: [
+        "The Variants and Taxonomy launches needed major changes to the existing webhook code.",
+        "Added 75+ scope-and-action combinations for entry variants alone, giving customers granular control over what triggers their integrations.",
+        "Shipped with no breaking changes for existing customer integrations.",
+      ],
+      impact: [["75+", "trigger combinations", "for entry variants alone"], ["0", "breaking changes", "for existing integrations"], ["2", "launches unblocked", "Variants and Taxonomy"]] },
+    { title: "PRODUCTION & SECURITY", sprite: "oneup", tags: ["Kafka", "Elastic Cloud", "Observe", "Snyk", "Trivy", "Docker"],
+      why: "A data platform is only useful if it stays up and stays safe. Someone has to own the incidents, the upgrades and the vulnerabilities.",
+      did: [
+        "Led root-cause analysis for a Kafka backlog caused by one customer's sudden activity surge.",
+        "Handled the Kafka upgrade and the Elasticsearch move from OpenSearch to Elastic Cloud, and verified the platform after security patches and maintenance.",
+        "Built monitoring dashboards and Slack-integrated alerts in Observe for production data jobs and services.",
+        "Led a security sweep across 10 services that cleared 5,000+ CVEs left open for over a year, with Snyk and Trivy now catching new vulnerabilities before merge.",
+      ],
+      impact: [["5,000+", "CVEs cleared", "open for over a year, across 10 services"], ["2", "major migrations", "Kafka upgrade, OpenSearch → Elastic Cloud"], ["SLACK", "alerts on production jobs", "dashboards in Observe"]] },
   ];
 
   const SIDE_QUESTS = [
     { title: "JEVSTREAM", sprite: "star", map: "jevstream",
       body: "Priority-based ticket routing. A FastAPI service judges each ticket's urgency and stores it in a Redis sorted set; workers claim the most urgent first through atomic Lua scripts with expiring leases, so a crashed worker's ticket goes back in the queue.",
       tags: ["Python", "FastAPI", "Redis", "Lua"], code: "https://github.com/Divesh-Kumar-Chordia/jevstream" },
-    { title: "ANALYTICS AUTOMATION LAB", sprite: "oneup", map: "automation-lab",
+    { title: "ANALYTICS AUTOMATION LAB", sprite: "oneup",
       body: "Analytics dashboards are only as good as the meter events behind them, so this lab generates realistic Contentstack activity to validate them: 29 scripts run bootstrap, periodic (every 5 minutes in CI) and meter-coverage phases with multi-user simulation and TOTP, producing 10,000+ entries and 50,000+ meter events per run. Plus a Vite + React Delivery API site and cache-warming load tests.",
       tags: ["React", "Vite", "Node.js"], live: "https://top-url-website-making.vercel.app", code: "https://github.com/DiveshKumarChordia/contentstack-analytics-automation-lab" },
     { title: "LUMEN VISUAL EXPERIENCE", sprite: "fireflower",
@@ -103,19 +129,25 @@
   };
 
   const TIMELINE = [
-    { status: "now", role: "SOFTWARE ENGINEER", org: "Contentstack · Bengaluru", when: "Aug 2024 – Present",
-      lead: "Data and analytics platform. The flagship systems are in Project Select above; this is the rest of the job.",
-      points: [
-        "Primary point of contact in production for the audit platform, leading root-cause analysis: a Kafka backlog from one customer's sudden activity surge, the Kafka upgrade, the Elasticsearch move from OpenSearch to Elastic Cloud, and verification after security patches and maintenance.",
-        "Built monitoring dashboards and Slack-integrated alerts in Observe (a Datadog-style platform) for production data jobs and services.",
-        "Led a security sweep across 10 services that cleared 5,000+ CVEs left open for over a year: Node.js 24, Go 1.24, Alpine 3.23 non-root multi-stage images, zlib/OpenSSL, with Snyk + Trivy now catching new vulnerabilities before merge.",
-        "Took the Top URLs export (the most-hit URLs, computed in Athena SQL) from failing beyond 1,000 records to paginated exports of 10,000+ (10x), with a precheck that flags row-limit failures before a job runs.",
-        "Delivered 3 CMS analytics dashboards end to end: metering instrumentation, Spark rollups, Elasticsearch snapshots, serving processors, React widgets and plan gating.",
-        "Principal author of cs-highcharts, the shared charting library behind the analytics dashboards: new chart types and features, plus a log10-based tick-interval algorithm that ended duplicate axis labels under auto-scaling.",
-        "Build reusable UI widgets and components for the core analytics dashboards, and drive front-end redesigns that make the data easier to read.",
-        "Replaced repeated manual test-environment setup with daily automated runs that generate realistic data and clear old data.",
-        "Run Agile release cycles and ceremonies for the analytics line, triage customer issues, do code reviews across 35 repositories, and have anchored the team's daily standup for over a year.",
-        "Use AI tools daily (Cursor rules and hooks, Claude Skills, MCP) for implementation, refactoring and test generation.",
+    { status: "now", role: "SOFTWARE ENGINEER", org: "Contentstack · Bengaluru", when: "Aug 2024 – Present", wide: true,
+      lead: "Data and analytics platform: the systems customers rely on to audit, trust and act on their data. The flagship work is in Project Select above.",
+      impact: [["BILLIONS", "of audit logs searchable"], ["2B+", "API calls a month in analytics"], ["EVERY", "customer on the Analytics API"], ["5,000+", "CVEs cleared"]],
+      groups: [
+        ["OWN IT IN PRODUCTION", [
+          "Primary point of contact for the audit platform: root-cause analysis for a Kafka backlog from one customer's activity surge, the Kafka upgrade, and the move from OpenSearch to Elastic Cloud.",
+          "Monitoring dashboards and Slack-integrated alerts in Observe for production data jobs and services.",
+          "Security sweep across 10 services that cleared 5,000+ CVEs open for over a year.",
+        ]],
+        ["SHIP FOR CUSTOMERS", [
+          "Delivered 3 CMS analytics dashboards end to end, from instrumentation to the UI.",
+          "Principal author of cs-highcharts, the shared charting library behind every analytics dashboard; a log10-based tick algorithm ended duplicate axis labels.",
+          "Reusable dashboard widgets and front-end redesigns that make the data easier to read.",
+        ]],
+        ["RAISE THE TEAM", [
+          "Run Agile release cycles and ceremonies for the analytics line, and have anchored the team's daily standup for over a year.",
+          "Code reviews across 35 repositories; daily automated runs replaced repeated manual test-environment setup.",
+          "Work AI-first every day: Cursor rules and hooks, Claude Skills and MCP for implementation, refactoring and test generation.",
+        ]],
       ] },
     { status: "clear", role: "SOFTWARE ENGINEER INTERN", org: "Contentstack · Bengaluru", when: "Jan 2024 – Jul 2024",
       points: [
@@ -139,69 +171,6 @@
   };
   const n = (id, x, y, label, note, kind = "svc", w = 150) => ({ id, x, y, label, note, kind, w });
   const MAPS = {
-    audit: { h: 330, nodes: [
-      n("prod", 10, 30, "6 PRODUCTS", "audit · webhook\npublish logs", "src", 130),
-      n("kafka", 190, 30, "KAFKA", "multi-topic SDK", "queue", 130),
-      n("cons", 370, 30, "LOGS CONSUMER", "Go worker pool\nnew index monthly", "svc", 160),
-      n("es", 580, 30, "ELASTICSEARCH", "monthly indices\nquery alias\nILM hot · warm · cold", "store", 170),
-      n("ui", 10, 230, "CUSTOMERS\n+ ADMIN UI", "filter + search", "user", 130),
-      n("svc", 370, 230, "LOGS SERVICE", "gRPC · mutex-guarded\nMongo → ES translator", "svc", 160),
-    ], edges: [
-      { from: "prod", to: "kafka", label: "events" }, { from: "kafka", to: "cons" }, { from: "cons", to: "es", label: "bulk write" },
-      { from: "ui", to: "svc", label: "gRPC query" }, { from: "svc", fs: "r", to: "es", ts: "b", label: "via alias" },
-    ] },
-    webhooks: { h: 400, nodes: [
-      n("ev", 10, 40, "STACK EVENT", "content changes", "src", 140),
-      n("trig", 200, 40, "TRIGGER", "checks the webhook's\nconditions"),
-      n("exec", 400, 40, "EXECUTOR", "sends the event"),
-      n("url", 600, 40, "CUSTOMER URL", "their server", "user"),
-      n("retry", 400, 210, "RETRY QUEUE", "tries again", "queue"),
-      n("failed", 600, 210, "FAILED STORE", "after 3 failed tries", "fail"),
-      n("notif", 600, 320, "NOTIFIER", "a notification\ngoes out", "fail"),
-    ], edges: [
-      { from: "ev", to: "trig" }, { from: "trig", to: "exec", label: "match" }, { from: "exec", to: "url", label: "deliver" },
-      { from: "exec", fs: "b", fo: 35, to: "retry", ts: "t", to2: 35, label: "fails", fail: true },
-      { from: "retry", fs: "t", fo: -35, to: "exec", ts: "b", to2: -35, label: "retry", dashed: true },
-      { from: "retry", to: "failed", label: "3 fails", fail: true }, { from: "failed", fs: "b", to: "notif", ts: "t", fail: true },
-    ] },
-    analytics: { h: 330, nodes: [
-      n("cf", 10, 30, "CLOUDFLARE", "CDN traffic", "src"),
-      n("kf", 10, 190, "KAFKA", "platform events", "queue"),
-      n("spark", 220, 105, "SPARK ETL", "~1B records"),
-      n("es", 420, 105, "ELASTICSEARCH", "aggregates", "store", 150),
-      n("api", 610, 105, "ANALYTICS API", "v1 / v2 · usage,\nstatus codes, cache,\ndevices", "svc", 140),
-      n("dash", 610, 260, "DASHBOARDS", "2B+ calls / month", "user", 140),
-    ], edges: [
-      { from: "cf", to: "spark", mid: 190 }, { from: "kf", to: "spark", mid: 190 }, { from: "spark", to: "es", label: "persist" },
-      { from: "es", to: "api" }, { from: "api", fs: "b", to: "dash", ts: "t" },
-    ] },
-    contentops: { h: 380, nodes: [
-      n("mongo", 10, 40, "LEGACY MONGO", "no joins\nno reliable timestamps", "store", 160),
-      n("scan", 220, 40, "DAILY SCAN", "on Mongo indexes\nlow cost"),
-      n("counts", 420, 40, "STAGE COUNTS", "branch × type\n× locale"),
-      n("dash", 610, 40, "3 DASHBOARDS", "life cycle · workflow\nhealth · adoption", "user", 140),
-      n("seed", 10, 250, "SEEDED DATA", "realistic usage\npatterns", "src", 160),
-      n("rules", 220, 250, "PRODUCT RULES", "expected values", "lib"),
-      n("eval", 420, 250, "EVALUATOR", "Playwright: DOM\n+ screenshots", "queue"),
-      n("verdict", 610, 250, "PASS / FAIL", "67 operation-\nsequence cases", "lib", 140),
-    ], edges: [
-      { from: "mongo", to: "scan" }, { from: "scan", to: "counts" }, { from: "counts", to: "dash" },
-      { from: "seed", fs: "t", to: "mongo", ts: "b", label: "writes", dashed: true },
-      { from: "rules", to: "eval", label: "expect" }, { from: "dash", fs: "b", to: "eval", ts: "t", label: "reads" }, { from: "eval", to: "verdict" },
-    ] },
-    discovery: { h: 330, nodes: [
-      n("es", 10, 10, "ELASTICSEARCH", "", "store", 160),
-      n("mongo", 10, 85, "MONGODB", "multi-cluster", "store", 160),
-      n("audit", 10, 175, "AUDIT LOGS", "", "store", 160),
-      n("meter", 10, 250, "METERING", "", "store", 160),
-      n("proc", 240, 120, "9 USAGE\nPROCESSORS", "template-driven"),
-      n("caps", 440, 120, "17 CAPABILITIES", "bought + used\nbought, idle\nnot bought", "lib"),
-      n("pkg", 620, 40, "REACT PACKAGE", "9 releases", "svc", 130),
-      n("apps", 620, 220, "3 PRODUCTION\nAPPS", "", "user", 130),
-    ], edges: [
-      { from: "es", to: "proc", mid: 205 }, { from: "mongo", to: "proc", mid: 205 }, { from: "audit", to: "proc", mid: 205 }, { from: "meter", to: "proc", mid: 205 },
-      { from: "proc", to: "caps", label: "resolve" }, { from: "caps", to: "pkg", mid: 605 }, { from: "pkg", fs: "b", to: "apps", ts: "t", label: "used by" },
-    ] },
     jevstream: { h: 400, nodes: [
       n("tk", 10, 40, "TICKET", "webhook producer", "src", 130),
       n("api", 190, 40, "FASTAPI", "POST /ingest"),
@@ -263,27 +232,6 @@
       { from: "ui", to: "api" },
       { from: "api", to: "pipe", mid: 320 }, { from: "api", to: "agent", mid: 320 }, { from: "api", to: "wf", mid: 320 }, { from: "api", to: "ev", mid: 320 },
       { from: "pipe", to: "ol", mid: 545 }, { from: "pipe", to: "ch", mid: 545 }, { from: "pipe", to: "sq", mid: 545 }, { from: "pipe", to: "rr", mid: 545 },
-    ] },
-    "automation-lab": { h: 540, nodes: [
-      n("ci", 10, 20, "CI SCHEDULE", "every 5 minutes", "src", 170),
-      n("orch", 240, 20, "ORCHESTRATOR", "29 scripts · self-healing", "svc", 210),
-      n("boot", 10, 130, "BOOTSTRAP", "types · 5 locales\nbranches · workflows", "lib", 170),
-      n("per", 230, 130, "PERIODIC RUN", "10k entries · localize\npublish · delete", "lib", 190),
-      n("cov", 470, 130, "METER COVERAGE", "6 edge-case\nscenarios", "lib", 170),
-      n("cma", 10, 270, "CONTENTSTACK CMA", "multi-user · TOTP", "svc", 190),
-      n("kf", 250, 270, "KAFKA", "50k+ meter events", "queue", 160),
-      n("mg", 460, 270, "MONGO", "", "store", 110),
-      n("es", 600, 270, "ELASTICSEARCH", "", "store", 150),
-      n("dash", 550, 380, "ANALYTICS DASHBOARDS", "lifecycle · workflow\nteam adoption", "user", 200),
-      n("perf", 10, 380, "PERF TESTS", "cache warming\nURL hitting", "svc", 190),
-      n("del", 260, 380, "DELIVERY API", "published entries", "svc", 180),
-      n("app", 260, 470, "FRONTEND APP", "Vite + React", "user", 180),
-    ], edges: [
-      { from: "ci", to: "orch" },
-      { from: "orch", fs: "b", fo: -60, to: "boot", ts: "t" }, { from: "orch", fs: "b", to: "per", ts: "t" }, { from: "orch", fs: "b", fo: 60, to: "cov", ts: "t" },
-      { from: "boot", fs: "b", to: "cma", ts: "t" }, { from: "per", fs: "b", to: "cma", ts: "t", to2: 40 }, { from: "cov", fs: "b", to: "cma", ts: "t", to2: 80, mid: 250 },
-      { from: "cma", to: "kf" }, { from: "kf", to: "mg" }, { from: "mg", to: "es" }, { from: "es", fs: "b", to: "dash", ts: "t", label: "validated" },
-      { from: "perf", to: "del", label: "load" }, { from: "del", fs: "b", to: "app", ts: "t" },
     ] },
     gitpulse: { h: 470, nodes: [
       n("user", 10, 20, "GITHUB USER", "", "user", 160),
@@ -575,43 +523,37 @@
   const bullets = (text) => text.split(/(?<=\.)\s+(?=[A-Z$])/)
     .map((b) => `<li class="relative pl-5 text-ink/80 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-brick">${esc(b)}</li>`).join("");
 
-  $("#levels").insertAdjacentHTML("beforeend", LEVELS.map((l, i) => {
-    const main = l.quest === "main";
-    return `
+  $("#levels").insertAdjacentHTML("beforeend", LEVELS.map((l, i) => `
     <li class="level-card cursor-pointer" data-level>
       <div class="tile-brick relative h-[var(--tile)] border-3 border-b-0 border-ink">
         <span class="absolute -top-4 left-4 border-3 border-ink bg-coin px-2 py-1 font-pixel text-px-xs shadow-px-sm">1-4-${String.fromCharCode(65 + i)}</span>
       </div>
-      <article class="px-card flex flex-1 flex-col p-6">
-        <p class="font-pixel text-px-xs ${main ? "text-mario" : "text-luigi-dark"}">${main ? "MAIN QUEST · CONTENTSTACK" : "SIDE QUEST · PERSONAL"}</p>
-        <h3 class="mt-3 font-pixel text-px-sm leading-6">${l.title}</h3>
-        <dl class="mt-4 flex-1 space-y-5">
-          <div><dt class="font-pixel text-px-xs text-ink/50">WHY IT EXISTS</dt><dd class="mt-1 font-medium text-ink">${esc(l.why)}</dd></div>
-          <div><dt class="font-pixel text-px-xs text-ink/50">HOW IT FLOWS</dt><dd>
-            <ol class="flow mt-2">${l.flow.map((f) => `<li><span>${esc(f)}</span></li>`).join("")}</ol>
-            ${l.fail ? `<p class="mt-2 font-pixel text-[8px] leading-4 text-mario">ON FAILURE: ${esc(l.fail)}</p>` : ""}
-            ${l.map ? mapBtn(l.map) : ""}
-          </dd></div>
-          <div><dt class="sr-only">What I built</dt><dd>
-            <details class="group">
-              <summary class="flex cursor-pointer list-none items-center gap-3 font-pixel text-px-xs text-ink/70 hover:text-ink [&::-webkit-details-marker]:hidden">
-                <img src="${SPR("qblock")}" alt="" class="h-5 w-5 group-open:hidden" /><img src="${SPR("qblock-used")}" alt="" class="hidden h-5 w-5 group-open:block" />
-                <span class="group-open:hidden">WHAT I BUILT (${l.built.split(/(?<=\.)\s+(?=[A-Z$])/).length})</span><span class="hidden group-open:inline">WHAT I BUILT</span>
-              </summary>
-              <ul class="mt-3 space-y-2">${bullets(l.built)}</ul>
-            </details>
-          </dd></div>
-        </dl>
-        <p class="mt-5 flex items-center gap-3 border-2 border-dashed border-ink/30 px-3 py-2 font-pixel text-px-xs leading-5">
-          <img src="${SPR("coin")}" alt="" class="h-[14px] w-2 shrink-0" />${l.stat}
-        </p>
-        <ul class="mt-5 flex flex-wrap gap-2">${l.tags.map((t) => `<li class="px-tag ${main ? "bg-coin" : "bg-luigi text-white"}">${esc(t)}</li>`).join("")}</ul>
+      <article class="px-card p-6 sm:p-8">
+        <div class="flex flex-wrap items-center gap-4">
+          <img src="${SPR(l.sprite)}" alt="" class="sprite h-9 ${l.sprite === "coin" ? "w-5" : "w-9"}" />
+          <div>
+            <p class="font-pixel text-px-xs text-mario">MAIN QUEST · CONTENTSTACK</p>
+            <h3 class="mt-2 font-pixel text-px-sm leading-6 sm:text-px-md sm:leading-7">${l.title}</h3>
+          </div>
+        </div>
+        <div class="mt-6 grid gap-8 lg:grid-cols-[1.35fr_1fr]">
+          <div>
+            <p class="font-pixel text-px-xs text-ink/50">WHY IT MATTERS</p>
+            <p class="mt-2 font-medium">${esc(l.why)}</p>
+            <p class="mt-6 font-pixel text-px-xs text-ink/50">WHAT I DID</p>
+            <ul class="mt-3 space-y-2">${l.did.map((d) => `<li class="relative pl-5 text-ink/85 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-brick">${esc(d)}</li>`).join("")}</ul>
+          </div>
+          <div class="px-panel self-start p-5 sm:p-6">
+            <p class="font-pixel text-px-xs text-white/60">IMPACT</p>
+            <ul class="mt-2 divide-y-2 divide-dashed divide-white/15">${l.impact.map(([v, t, d]) => `<li class="py-3"><p class="font-pixel text-px-md text-coin">${esc(v)}</p><p class="mt-1 font-semibold text-white">${esc(t)}</p><p class="text-[14px] text-white/60">${esc(d)}</p></li>`).join("")}</ul>
+          </div>
+        </div>
+        <ul class="mt-6 flex flex-wrap gap-2">${l.tags.map((t) => `<li class="px-tag bg-coin">${esc(t)}</li>`).join("")}</ul>
       </article>
-    </li>`;
-  }).join(""));
+    </li>`).join(""));
 
   $$("[data-level]").forEach((card) => card.addEventListener("click", (e) => {
-    if (e.target.closest("a, details, button") || getSelection().toString()) return;
+    if (e.target.closest("a, button") || getSelection().toString()) return;
     bumpEl(card); popCoin(card.firstElementChild); sfx.coin(); addCoin(); addScore(200);
     const r = card.getBoundingClientRect(); popScore("200", r.left + r.width / 2 - 12, r.top - 24);
   }));
@@ -660,26 +602,28 @@
     const b = e.target.closest("[data-map]"); if (!b) return;
     const key = b.dataset.map, fm = FEATURED.maps.find(([k]) => k === key);
     if (fm) return openMap(key, `${FEATURED.title} · ${fm[1].toUpperCase()}`, FEATURED.why);
-    const lv = LEVELS.find((l) => l.map === key), sq = SIDE_QUESTS.find((q) => q.map === key);
-    openMap(key, (lv || sq).title, lv ? lv.why : sq.body);
+    const sq = SIDE_QUESTS.find((q) => q.map === key);
+    if (sq) openMap(key, sq.title, sq.body);
   });
   $("#map").addEventListener("click", (e) => { if (e.target.id === "map") e.target.close(); });
 
   /* ================= progress: vine + course clear ================= */
+  const pointList = (ps) => `<ul class="mt-3 space-y-2">${ps.map((p) => `<li class="relative pl-6 text-ink/85 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-brick">${esc(p)}</li>`).join("")}</ul>`;
   $("#timeline").innerHTML = TIMELINE.map((t, i) => `
-    <li class="checkpoint relative pl-[calc(var(--tile)*1.75+16px)] md:w-1/2 md:pl-0 ${i % 2 ? "md:ml-auto md:pl-14" : "md:pr-14"}">
-      <span class="checkpoint-flag top-6 left-[calc(var(--tile)*0.875+2px)] ${i % 2 ? "md:-left-[1px]" : "md:left-auto md:-right-[23px] md:[clip-path:polygon(100%_0,0_50%,100%_100%)]"}"></span>
-      <article class="px-card p-6">
+    <li class="checkpoint relative pl-[calc(var(--tile)*1.75+16px)] ${t.wide ? "md:pl-0" : `md:w-1/2 md:pl-0 ${i % 2 ? "md:ml-auto md:pl-14" : "md:pr-14"}`}">
+      <span class="checkpoint-flag top-6 left-[calc(var(--tile)*0.875+2px)] ${t.wide ? "md:hidden" : i % 2 ? "md:-left-[1px]" : "md:left-auto md:-right-[23px] md:[clip-path:polygon(100%_0,0_50%,100%_100%)]"}"></span>
+      <article class="px-card p-6 ${t.wide ? "sm:p-8" : ""}">
         <div class="flex flex-wrap items-center gap-3">
           ${t.status === "now"
             ? `<span class="inline-flex items-center gap-2 border-2 border-ink bg-coin px-2 py-1 font-pixel text-px-xs"><img src="${SPR("star")}" alt="" class="h-4 w-4" />IN PROGRESS</span>`
             : `<span class="border-2 border-ink bg-luigi px-2 py-1 font-pixel text-px-xs text-white">LEVEL CLEAR</span>`}
           <span class="font-pixel text-px-xs text-ink/60">${t.when}</span>
         </div>
-        <h3 class="mt-4 font-pixel text-px-sm leading-6">${t.role}</h3>
+        <h3 class="mt-4 font-pixel text-px-sm leading-6 ${t.wide ? "sm:text-px-md sm:leading-7" : ""}">${t.role}</h3>
         <p class="mt-1 text-ink/70">${t.org}</p>
         ${t.lead ? `<p class="mt-3 font-medium">${esc(t.lead)}</p>` : ""}
-        <ul class="mt-4 space-y-2">${t.points.map((p) => `<li class="relative pl-6 text-ink/85 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-brick">${esc(p)}</li>`).join("")}</ul>
+        ${t.impact ? `<ul class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">${t.impact.map(([v, l]) => `<li class="border-3 border-ink bg-night p-3 text-white"><p class="font-pixel text-px-sm text-coin sm:text-px-md">${esc(v)}</p><p class="mt-1 text-[14px] leading-snug text-white/80">${esc(l)}</p></li>`).join("")}</ul>` : ""}
+        ${t.groups ? `<div class="mt-6 grid gap-6 lg:grid-cols-3">${t.groups.map(([g, ps]) => `<div><p class="font-pixel text-px-xs text-mario">${g}</p>${pointList(ps)}</div>`).join("")}</div>` : pointList(t.points)}
       </article>
     </li>`).join("");
 
