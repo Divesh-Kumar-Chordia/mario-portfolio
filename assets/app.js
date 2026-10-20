@@ -29,7 +29,7 @@
 
   // Company work: why it matters, what I did, and the impact. No internal system flows (not public).
   const LEVELS = [
-    { npc: ["host", "MUSHROOM HOST", "Every click in Contentstack leaves a footprint. Divesh built the vault that keeps billions of them, finds any one fast, and doesn’t burn money doing it."], title: "AUDIT LOGGING PLATFORM", sprite: "mushroom", tags: ["Go", "Kafka", "Elasticsearch", "gRPC", "Multi-tenant"],
+    { scene: "vault", npc: ["host", "MUSHROOM HOST", "Every click in Contentstack leaves a footprint. Divesh built the vault that keeps billions of them, finds any one fast, and doesn’t burn money doing it."], title: "AUDIT LOGGING PLATFORM", sprite: "mushroom", tags: ["Go", "Kafka", "Elasticsearch", "gRPC", "Multi-tenant"],
       why: "Customers need a searchable record of every audit, webhook and publish event. When Contentstack grew from one product into a multi-product platform, the original single-product audit log could not keep up: logging had to be redesigned to serve every product and every customer, at scale and at low cost.",
       did: [
         "Built the Go services behind the redesigned, **multi-tenant audit platform**: multithreaded and low-resource, keeping **billions of logs** searchable.",
@@ -38,7 +38,7 @@
         "**Primary point of contact** in production: root-cause analysis, upgrades and migrations.",
       ],
       impact: [["BILLIONS", "of logs kept searchable", "audit, webhook and publish events"], ["6", "products onboarded", "plus every new customer"], ["LOW COST", "at high performance", "multithreaded, low-resource Go"]] },
-    { npc: ["dino", "DINO", "These numbers used to show up once a day. Now they’re about 20 minutes fresh. Even I can’t eat that fast."], title: "ANALYTICS PIPELINES & API", sprite: "oneup", tags: ["Apache Spark", "Elasticsearch", "Kafka", "AWS Athena", "API design"],
+    { scene: "fresh", npc: ["dino", "DINO", "These numbers used to show up once a day. Now they’re about 20 minutes fresh. Even I can’t eat that fast."], title: "ANALYTICS PIPELINES & API", sprite: "oneup", tags: ["Apache Spark", "Elasticsearch", "Kafka", "AWS Athena", "API design"],
       why: "Customers want to know how their stack is used: API calls, bandwidth, status codes, cache hits and misses, devices. That data starts as raw traffic and has to arrive as numbers customers can trust, in the product and through an API they can build on.",
       did: [
         "Build the **Spark ETL pipelines** that turn about a billion raw records into the usage analytics customers see.",
@@ -48,7 +48,7 @@
         "Scaled **Top URLs exports 10x** (1,000 to 10,000+ records) with Athena SQL pagination and a pre-run check.",
       ],
       impact: [["2B+", "API calls a month", "turned into customer analytics"], ["DAILY → 20 MIN", "data freshness", "via a 4-hour stage, at lower compute cost"], ["EVERY", "customer has the API enabled", "some feed it into their own dashboards"], ["10x", "larger Top URLs exports", "1,000 → 10,000+ records"]] },
-    { npc: ["princess", "PRINCESS", "Thank you, Divesh! Now I can see exactly which workflow stage my content is stuck in, and who’s sitting on it."], title: "CONTENT OPERATIONS ANALYTICS", sprite: "fireflower", tags: ["MongoDB", "Elasticsearch", "Playwright", "Data quality"],
+    { scene: "flow", npc: ["princess", "PRINCESS", "Thank you, Divesh! Now I can see exactly which workflow stage my content is stuck in, and who’s sitting on it."], title: "CONTENT OPERATIONS ANALYTICS", sprite: "fireflower", tags: ["MongoDB", "Elasticsearch", "Playwright", "Data quality"],
       why: "Content teams need to see where work gets stuck in a workflow and who it's stuck with, who is active or inactive, and whether content follows its workflows. The legacy core product has no reliable timestamps and only single-level joins, which makes accurate numbers hard.",
       did: [
         "Built the analytics behind **3 product surfaces**, now rolling out: Content Life Cycle, Workflow Health and Team Adoption.",
@@ -56,7 +56,7 @@
         "Built a **Playwright Evaluator** (67 operation-sequence cases) that is **re-run across dev and production to sign off every release**.",
       ],
       impact: [["100K+", "entries per organization", "with millions of daily publishes"], ["67", "operation-sequence test cases", "checked by the Evaluator"], ["3", "product surfaces", "life cycle, workflow health, team adoption"]] },
-    { npc: ["hero2-idle", "PLAYER 2", "Paying for a feature you never use? This screen tells on you. The sales team loves it for the opposite reason."], title: "FEATURE ADOPTION", sprite: "star", tags: ["NestJS", "React", "Micro-frontend", "MongoDB"],
+    { scene: "shop", npc: ["hero2-idle", "PLAYER 2", "Paying for a feature you never use? This screen tells on you. The sales team loves it for the opposite reason."], title: "FEATURE ADOPTION", sprite: "star", tags: ["NestJS", "React", "Micro-frontend", "MongoDB"],
       why: "Customers couldn't easily see what they pay for versus what they actually use, and PMs and customer success had no clear view of which features an account hadn't adopted.",
       did: [
         "Owned it **from ideation to production**: one usage view across audit trails, metering data and analytics.",
@@ -64,7 +64,7 @@
         "Shipped as a **reusable package and micro-frontend**, now used by 3 production apps.",
       ],
       impact: [["PAY vs USE", "cost visibility for customers", "what they pay for vs what they use"], ["UPSELL", "signal for PMs and CSMs", "features an account hasn't adopted"], ["3", "production apps reuse it", "package + micro-frontend"]] },
-    { npc: ["ghost", "SHY GHOST", "Boo! 75+ new ways for content changes to ping your server, and not one old integration broke. Spooky."], title: "WEBHOOKS", sprite: "coin", tags: ["Event-driven", "Retries", "API design", "Backward compatibility"],
+    { scene: "delivery", npc: ["ghost", "SHY GHOST", "Boo! 75+ new ways for content changes to ping your server, and not one old integration broke. Spooky."], title: "WEBHOOKS", sprite: "coin", tags: ["Event-driven", "Retries", "API design", "Backward compatibility"],
       why: "Customers plug Contentstack into their own systems. When content changes, their integrations have to fire for exactly the right events.",
       did: [
         "Reworked the webhook code for the **Variants and Taxonomy launches**.",
@@ -72,7 +72,7 @@
         "Shipped with **zero breaking changes** for existing customer integrations.",
       ],
       impact: [["75+", "trigger combinations", "for entry variants alone"], ["0", "breaking changes", "for existing integrations"], ["2", "launches unblocked", "Variants and Taxonomy"]] },
-    { npc: ["boss-1", "PROD INCIDENT (THE BOSS)", "I used to win. Then 5,000 CVEs vanished, the data jobs started tattling on me in Slack, and I lost my favourite hiding spots."], title: "PRODUCTION & SECURITY", sprite: "oneup", tags: ["Kafka", "Elastic Cloud", "Observe", "Snyk", "Trivy", "Docker"],
+    { scene: "defense", npc: ["boss-1", "PROD INCIDENT (THE BOSS)", "I used to win. Then 5,000 CVEs vanished, the data jobs started tattling on me in Slack, and I lost my favourite hiding spots."], title: "PRODUCTION & SECURITY", sprite: "oneup", tags: ["Kafka", "Elastic Cloud", "Observe", "Snyk", "Trivy", "Docker"],
       why: "A data platform is only useful if it stays up and stays safe. Someone has to own the incidents, the upgrades and the vulnerabilities.",
       did: [
         "Moved audit search from **AWS OpenSearch to Elastic Cloud** for security and to match Azure and GCP: transfer scripts, dual writes, then a clean cutover.",
@@ -566,6 +566,64 @@
   const bullets = (text) => text.split(/(?<=\.)\s+(?=[A-Z$])/)
     .map((b) => `<li class="relative pl-5 text-ink/80 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-brick">${esc(b)}</li>`).join("");
 
+
+  // Little animated dioramas: what each piece of work means, told with things from the Mushroom Kingdom.
+  const im = (name, cls = "", style = "") => `<img src="${SPR(name)}" alt="" class="${cls}" style="${style}" />`;
+  const tag = (text, style, cls = "") => `<span class="sc-tag ${cls}" style="${style}">${text}</span>`;
+  const SCENES = {
+    vault: { cap: "THE VAULT", alt: "Coins (logs) rain into a warp pipe and pile up in an underground vault; any single coin pops back out on request.", html: `
+      ${[0, 0.6, 1.2].map((d, i) => im("coin", "sc-fall", `left:calc(24% + ${i * 6 - 6}px);animation-delay:${d}s`)).join("")}
+      <div class="sc sc-pipe" style="left:calc(24% - 15px)"></div>
+      ${tag("EVERY CLICK", "left:4%;top:44px")}
+      <div class="sc sc-vault">
+        ${[48, 74, 100, 60, 86].map((h, i) => `<div class="sc sc-stack ${i === 2 ? "grow" : ""}" style="left:${10 + i * 17}%;height:${h}px"></div>`).join("")}
+        ${im("coin", "sc-fetch", "left:calc(78% + 5px);bottom:96px")}
+        ${tag("FOUND IT!", "left:8px;top:12px", "sc-blink")}
+      </div>
+      ${im("host", "sc-bob", "left:40%;bottom:32px;width:28px;height:28px")}` },
+    fresh: { cap: "FRESH COINS", alt: "A ? block pays out a coin every few seconds and a brick bar chart keeps up: data refreshes every 20 minutes instead of daily.", html: `
+      ${im("qblock", "sc-hit", "left:14%;top:52px;width:32px;height:32px")}
+      ${im("coin", "sc-arc")}
+      ${im("dino", "sc-bob", "left:8%;bottom:32px;width:34px;height:34px")}
+      ${tag("REFRESH: <s>DAILY</s> → 20 MIN", "right:8px;top:12px")}
+      ${[38, 58, 46, 78, 66, 96].map((h, i) => `<div class="sc sc-bar ${i === 5 ? "tick" : ""}" style="left:calc(${34 + i * 9}%);height:${h}px"></div>`).join("")}` },
+    flow: { cap: "WHO'S HOLDING IT UP?", alt: "An entry hops from Draft to Review to Live, but gets stuck on Review where a turtle is sitting.", html: `
+      <div class="sc sc-ledge" style="left:5%;width:18%;bottom:52px"></div>
+      <div class="sc sc-ledge" style="left:33%;width:20%;bottom:78px"></div>
+      <div class="sc sc-ledge" style="left:68%;width:22%;bottom:98px"></div>
+      ${tag("DRAFT", "left:7%;bottom:30px;background:#FCE4B0")}
+      ${tag("REVIEW", "left:35%;bottom:56px;background:#FCE4B0")}
+      ${tag("LIVE", "left:72%;bottom:76px;background:#FCE4B0")}
+      ${im("mushroom", "sc-hopper")}
+      ${im("turtle-1", "", "left:46%;bottom:92px;width:26px;height:26px")}
+      ${tag("!", "left:calc(46% + 6px);bottom:126px;background:#E52521;color:#fff", "sc-blink")}
+      ${im("princess", "sc-bob", "left:82%;bottom:112px;width:28px;height:28px")}` },
+    shop: { cap: "THE ITEM SHOP", alt: "A shelf of power-ups: the ones the customer uses bounce, the ones they pay for but never use sit greyed out.", html: `
+      <div class="sc sc-ledge" style="left:24%;right:6%;bottom:62px"></div>
+      ${[["mushroom", 1], ["fireflower", 0], ["star", 1], ["oneup", 0], ["coin", 1]].map(([s, used], i) =>
+        im(s, used ? "sc-used" : "sc-dusty", `left:calc(${30 + i * 13}%);bottom:76px;width:${s === "coin" ? 16 : 28}px;height:28px;animation-delay:${i * 0.3}s`)).join("")}
+      ${tag("ZZZ = PAID, UNUSED", "left:8px;top:34px")}
+      ${[43, 69].map((x) => tag("ZZZ", `left:calc(${x}% + 2px);bottom:110px;background:#FCE4B0`, "sc-blink")).join("")}
+      ${im("hero2-idle", "", "left:7%;bottom:32px;width:30px;height:30px")}
+      ${tag("?", "left:calc(7% + 8px);bottom:70px")}` },
+    delivery: { cap: "SPECIAL DELIVERY", alt: "One content change sends coins racing down three lanes to customer castles.", html: `
+      ${im("qblock", "sc-hit", "left:calc(18% - 34px);top:76px;width:30px;height:30px")}
+      ${im("ghost", "sc-bob", "left:calc(18% - 32px);bottom:34px;width:26px;height:26px")}
+      ${tag("1 CHANGE → EVERY SUBSCRIBER", "left:8px;top:34px;background:#FCE4B0")}
+      ${[72, 100, 128].map((y, i) => `<div class="sc sc-lane" style="top:${y}px"></div>${im("coin", "sc-ride", `top:${y - 10}px;animation-delay:${i * 0.35}s`)}`).join("")}
+      ${[60, 88, 116].map((y) => im("castle", "", `right:5%;top:${y}px;width:30px;height:30px`)).join("")}` },
+    defense: { cap: "CASTLE DEFENSE", alt: "Vulnerability bugs march on the castle and a Thwomp drops on every one; a cloud reports the jobs to Slack.", html: `
+      ${im("thwomp", "sc-thwomp", "left:calc(55% - 8px)")}
+      <div class="sc sc-march">${im("bug-1", "alive")}${im("bug-flat", "flat")}</div>
+      ${im("castle", "sc-quake", "right:4%;bottom:32px;width:64px;height:64px")}
+      ${tag("5,000+ CVES", "right:4%;top:58px")}
+      ${tag("#ALERTS: ALL JOBS RAN ✓", "left:8px;top:34px;background:#00B259;color:#fff")}` },
+  };
+  const scene = (k) => {
+    const sc = SCENES[k];
+    return sc ? `<figure class="scene mt-6" role="img" aria-label="${esc(sc.alt)}"><span class="sc-tag sc-cap">SCENE: ${sc.cap}</span>${sc.html}</figure>` : "";
+  };
+
   $("#levels").insertAdjacentHTML("beforeend", LEVELS.map((l, i) => `
     <li class="level-card cursor-pointer" data-level>
       <div class="tile-brick relative h-[var(--tile)] border-3 border-b-0 border-ink">
@@ -580,6 +638,7 @@
           </div>
         </div>
         ${say(l.npc)}
+        ${scene(l.scene)}
         <div class="mt-6 grid gap-8 lg:grid-cols-[1.35fr_1fr]">
           <div>
             <p class="font-pixel text-px-xs text-ink/50">THE QUEST</p>
@@ -595,6 +654,9 @@
         <ul class="mt-6 flex flex-wrap gap-2">${l.tags.map((t) => `<li class="px-tag bg-coin">${esc(t)}</li>`).join("")}</ul>
       </article>
     </li>`).join(""));
+
+  const liveScenes = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle("is-live", e.isIntersecting)), { rootMargin: "80px" });
+  $$(".scene").forEach((el) => liveScenes.observe(el));
 
   $$("[data-level]").forEach((card) => card.addEventListener("click", (e) => {
     if (e.target.closest("a, button") || getSelection().toString()) return;
