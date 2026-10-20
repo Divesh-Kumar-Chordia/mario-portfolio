@@ -42,17 +42,18 @@
       why: "Customers want to know how their stack is used: API calls, bandwidth, status codes, cache hits and misses, devices. That data starts as raw traffic and has to arrive as numbers customers can trust, in the product and through an API they can build on.",
       did: [
         "Build the Spark ETL pipelines that turn about a billion raw records into the usage analytics customers see.",
+        "Cut data freshness from daily to about 20 minutes, through a 4-hour stage. 5-minute windows overran processing (too many documents and partitions); about 20 minutes also lowered compute cost.",
         "Own the customer-facing Analytics API: onboard new products and analytics domains without changing the contract customers build on.",
         "Reconciled output inconsistencies from legacy foundations and replaced generic failures with errors that explain what went wrong.",
         "Took the Top URLs export (the most-hit URLs, computed in Athena SQL) from failing beyond 1,000 records to 10,000+, with a precheck that flags failures before a job runs.",
       ],
-      impact: [["2B+", "API calls a month", "turned into customer analytics"], ["EVERY", "customer has the API enabled", "some feed it into their own dashboards"], ["10x", "larger Top URLs exports", "1,000 → 10,000+ records"]] },
+      impact: [["2B+", "API calls a month", "turned into customer analytics"], ["DAILY → 20 MIN", "data freshness", "via a 4-hour stage, at lower compute cost"], ["EVERY", "customer has the API enabled", "some feed it into their own dashboards"], ["10x", "larger Top URLs exports", "1,000 → 10,000+ records"]] },
     { title: "CONTENT OPERATIONS ANALYTICS", sprite: "fireflower", tags: ["MongoDB", "Elasticsearch", "Playwright", "Data quality"],
       why: "Content teams need to see where work gets stuck in a workflow and who it's stuck with, who is active or inactive, and whether content follows its workflows. The legacy core product has no reliable timestamps and only single-level joins, which makes accurate numbers hard.",
       did: [
         "Built the analytics behind three product surfaces, now rolling out: Content Life Cycle, Workflow Health and Team Adoption.",
         "Kept them accurate and low-cost despite the legacy data model.",
-        "Built a Playwright Evaluator that checks every dashboard count against what the product rules say it should be, so wrong numbers are caught before customers see them.",
+        "Built a Playwright Evaluator that checks every dashboard count against what the product rules say it should be. It is re-run across dev and production to sign off every deployment and release, catching wrong numbers before customers see them.",
       ],
       impact: [["100K+", "entries per organization", "with millions of daily publishes"], ["67", "operation-sequence test cases", "checked by the Evaluator"], ["3", "product surfaces", "life cycle, workflow health, team adoption"]] },
     { title: "FEATURE ADOPTION", sprite: "star", tags: ["NestJS", "React", "Micro-frontend", "MongoDB"],
@@ -60,7 +61,6 @@
       did: [
         "Owned it from ideation to production: one usage view across audit trails, metering data and analytics.",
         "Customers compare what they pay for with what they use to optimize cost; PMs and CSMs spot features to upsell; anyone in the org can see its adoption.",
-        "Fixed under-reporting for sharded organizations.",
         "Shipped as a reusable package and micro-frontend, now used by 3 production applications.",
       ],
       impact: [["PAY vs USE", "cost visibility for customers", "what they pay for vs what they use"], ["UPSELL", "signal for PMs and CSMs", "features an account hasn't adopted"], ["3", "production apps reuse it", "package + micro-frontend"]] },
@@ -75,12 +75,12 @@
     { title: "PRODUCTION & SECURITY", sprite: "oneup", tags: ["Kafka", "Elastic Cloud", "Observe", "Snyk", "Trivy", "Docker"],
       why: "A data platform is only useful if it stays up and stays safe. Someone has to own the incidents, the upgrades and the vulnerabilities.",
       did: [
-        "Led root-cause analysis for a Kafka backlog caused by one customer's sudden activity surge.",
-        "Handled the Kafka upgrade and the Elasticsearch move from OpenSearch to Elastic Cloud, and verified the platform after security patches and maintenance.",
-        "Built monitoring dashboards and Slack-integrated alerts in Observe for production data jobs and services.",
+        "Moved audit search from AWS OpenSearch to Elastic Cloud: OpenSearch had drifted from Elasticsearch and wasn't being upgraded, and Azure and GCP already ran on Elastic Cloud. Transfer scripts, dual writes, then a clean cutover.",
+        "Built the first observability for production data pipelines: Observe dashboards and Slack-integrated alerts, so management can see whether every data job ran.",
+        "Primary point of contact in production: root-cause analysis, the Kafka upgrade, and verification after security patches and maintenance.",
         "Led a security sweep across 10 services that cleared 5,000+ CVEs left open for over a year, with Snyk and Trivy now catching new vulnerabilities before merge.",
       ],
-      impact: [["5,000+", "CVEs cleared", "open for over a year, across 10 services"], ["2", "major migrations", "Kafka upgrade, OpenSearch → Elastic Cloud"], ["SLACK", "alerts on production jobs", "dashboards in Observe"]] },
+      impact: [["5,000+", "CVEs cleared", "open for over a year, across 10 services"], ["2", "major migrations", "Kafka upgrade, OpenSearch → Elastic Cloud"], ["FIRST", "data-pipeline observability", "Observe dashboards + Slack alerts"]] },
   ];
 
   const SIDE_QUESTS = [
@@ -134,8 +134,9 @@
       impact: [["BILLIONS", "of audit logs searchable"], ["2B+", "API calls a month in analytics"], ["EVERY", "customer on the Analytics API"], ["5,000+", "CVEs cleared"]],
       groups: [
         ["OWN IT IN PRODUCTION", [
-          "Primary point of contact for the audit platform: root-cause analysis for a Kafka backlog from one customer's activity surge, the Kafka upgrade, and the move from OpenSearch to Elastic Cloud.",
-          "Monitoring dashboards and Slack-integrated alerts in Observe for production data jobs and services.",
+          "Primary point of contact for the audit platform: root-cause analysis, the Kafka upgrade, and the move from AWS OpenSearch to Elastic Cloud.",
+          "Built the first observability for production data pipelines: Observe dashboards and Slack alerts.",
+          "Cut analytics data freshness from daily to about 20 minutes.",
           "Security sweep across 10 services that cleared 5,000+ CVEs open for over a year.",
         ]],
         ["SHIP FOR CUSTOMERS", [
@@ -145,13 +146,13 @@
         ]],
         ["RAISE THE TEAM", [
           "Run Agile release cycles and ceremonies for the analytics line, and have anchored the team's daily standup for over a year.",
-          "Code reviews across 35 repositories; daily automated runs replaced repeated manual test-environment setup.",
-          "Work AI-first every day: Cursor rules and hooks, Claude Skills and MCP for implementation, refactoring and test generation.",
+          "Automated release testing for biweekly releases: daily runs generate realistic data and clear old data. Code reviews across 35 repositories.",
+          "Work AI-first (Cursor, Claude Skills, MCP): delivered an epic solo from ideation to production in 2 sprints, and to GA in two more.",
         ]],
       ] },
     { status: "clear", role: "SOFTWARE ENGINEER INTERN", org: "Contentstack · Bengaluru", when: "Jan 2024 – Jul 2024",
       points: [
-        "Built the audit-log module for the Customer Plan Management Tool (an internal CRM) from scratch: filtering, pagination, date ranges. Later admin surfaces reused its patterns.",
+        "Built the internal CRM's first scrollable data-table module from scratch (search, pagination, sorting, column-wise sorting), later reused as-is across admin tools.",
         "Delivered mail templates and logs, plus the rollout feature UI.",
         "Built a tech-event website on Contentstack as the headless CMS.",
       ] },
