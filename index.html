@@ -154,7 +154,7 @@
             </div>
             <div class="mt-6 space-y-4 text-white/90">
               <p>I work on <strong class="font-semibold text-white">Contentstack</strong>'s data and analytics platform: the systems that record everything customers do, deliver those events to their own servers, and turn raw traffic into analytics they can act on.</p>
-              <p>I built the Go audit-logging platform that stores billions of logs, work on the Spark pipelines and Analytics API behind 2B+ monthly API calls, and ship analytics features end to end across 8+ services, from metering instrumentation to React widgets to the automated checks that prove the numbers are right.</p>
+              <p>I built the Go audit-logging platform behind Contentstack's move to a multi-tenant Elasticsearch design, which keeps billions of logs searchable at low cost. I work on the Spark pipelines and the Analytics API every customer uses, behind 2B+ monthly API calls, and ship analytics features end to end, from metering instrumentation to React widgets to the automated checks that prove the numbers are right. And I keep it healthy in production: incident RCAs and migrations, Observe alerts, and a security sweep that cleared 5,000+ CVEs.</p>
               <p>On my own time I build AI systems, like a fully local RAG and agent platform with evals and tracing, plus tools around Contentstack and Redis-backed queues. I work AI-first with Claude Skills and MCP.</p>
               <p class="border-l-4 border-luigi pl-4 text-white">Open to Software Engineer (SDE), AI Engineer and Data Engineer roles. Immediate joiner.</p>
             </div>
@@ -170,8 +170,8 @@
               </li>
               <li class="flex items-center gap-5 py-5">
                 <img src="assets/sprites/coin.svg" alt="" class="sprite mx-[7px] h-8 w-[18px] shrink-0" />
-                <div class="flex-1"><p class="font-pixel text-px-xs text-white/60">COINS</p><p class="text-white/80">Merged pull requests, plus 515 reviews across 35 repos</p></div>
-                <p class="font-pixel text-px-lg text-white">×<span data-count="500">500</span>+</p>
+                <div class="flex-1"><p class="font-pixel text-px-xs text-white/60">COINS</p><p class="text-white/80">Long-open CVEs cleared across 10 services</p></div>
+                <p class="font-pixel text-px-lg text-white">×<span data-count="5000">5,000</span>+</p>
               </li>
               <li class="flex flex-wrap items-center gap-x-5 gap-y-2 py-5">
                 <img src="assets/sprites/star.svg" alt="" class="sprite h-8 w-8 shrink-0" />
@@ -375,13 +375,13 @@
         <form method="dialog"><button class="border-2 border-white px-2 py-2 font-pixel text-px-xs hover:bg-white hover:text-ink" aria-label="Close">CLOSE</button></form>
       </div>
       <ul class="mt-6 space-y-3 text-white/90">
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Built Contentstack's <strong class="text-white">Go audit-logging platform</strong>: billions of logs, Kafka to Elasticsearch, worker pools and ILM tiering. 6 products onboarded.</li>
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Spark ETL pipelines and the customer-facing <strong class="text-white">Analytics API</strong> behind 2B+ monthly API calls.</li>
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Content operations analytics</strong> on legacy data, proven by a Playwright Evaluator and 67 operation-sequence cases.</li>
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Platform Discovery</strong>: 17 capabilities through 9 usage processors across 8 repos, shipped as a React package used by 3 production apps.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Built Contentstack's <strong class="text-white">Go audit-logging platform</strong> for its move from a single-product MongoDB log to multi-tenant Elasticsearch: billions of logs, 6 products and every new customer onboarded.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">Spark ETL pipelines and the <strong class="text-white">Analytics API</strong> every customer uses, behind 2B+ monthly API calls; some customers pull it into their own dashboards.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Production ownership</strong>: RCAs for a Kafka surge, the Kafka upgrade and the OpenSearch → Elastic Cloud move; Observe dashboards with Slack alerts; cleared 5,000+ long-open CVEs across 10 services.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Content operations analytics</strong> on legacy data (where work is stuck and with whom), proven by a Playwright Evaluator across 67 operation-sequence cases.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Platform Discovery</strong>: customers compare what they pay for with what they use; PMs and CSMs spot upsells.</li>
+        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Webhooks</strong> for the Variants and Taxonomy launches: 75+ combinations for entry variants alone, no breaking changes. <strong class="text-white">Top URLs export</strong>: 1,000 → 10,000+ records.</li>
         <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">LocalAI Forge</strong> (side project): a fully local RAG and agent platform. Hybrid retrieval at hit@1 0.977, 95.7% eval pass rate, LLM judge calibrated to κ 0.80.</li>
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin"><strong class="text-white">Webhook delivery</strong>: 75+ new trigger combinations on a trigger, executor and retry pipeline.</li>
-        <li class="relative pl-6 before:absolute before:left-0 before:top-[10px] before:h-2 before:w-2 before:bg-coin">500+ merged PRs and 515 reviews across 35 repos. Principal author of the shared charting library; led a security sweep across 10 services.</li>
       </ul>
       <p class="mt-6 border-t-2 border-dashed border-white/20 pt-4 text-white/75"><span class="mr-2 font-pixel text-px-xs text-white/60">STACK</span> Go · TypeScript · Node.js · NestJS · Python · Kafka · Elasticsearch · MongoDB · Spark · AWS</p>
       <p class="mt-2 text-white/75"><span class="mr-2 font-pixel text-px-xs text-white/60">EDUCATION</span> B.E. Computer Science, SJCE Mysuru · CGPA 9.05</p>
