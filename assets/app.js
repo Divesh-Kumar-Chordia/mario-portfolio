@@ -58,9 +58,6 @@
   ];
 
   const SIDE_QUESTS = [
-    { title: "LOCALAI FORGE", sprite: "fireflower", map: "localai",
-      body: "A private, fully local RAG and agent platform on Ollama, built as a glass box: hybrid retrieval with reranking, a semantic cache, per-sentence grounding checks, guarded LangGraph agents, eval-gated prompt rollback, tracing and PII redaction. Retrieval hit@1 0.977; 95.7% pass on a 47-question golden set; LLM judge calibrated to κ 0.80.",
-      tags: ["Python", "FastAPI", "LangGraph", "Ollama", "Chroma"], code: "https://github.com/Divesh-Kumar-Chordia/localai-forge" },
     { title: "JEVSTREAM", sprite: "star", map: "jevstream",
       body: "Priority-based ticket routing. A FastAPI service judges each ticket's urgency and stores it in a Redis sorted set; workers claim the most urgent first through atomic Lua scripts with expiring leases, so a crashed worker's ticket goes back in the queue.",
       tags: ["Python", "FastAPI", "Redis", "Lua"], code: "https://github.com/Divesh-Kumar-Chordia/jevstream" },
@@ -77,6 +74,33 @@
       body: "A production-style RAG pipeline with LangChain and ChromaDB / Pinecone, plus a low-level lab for chunking, embeddings, RAG-Fusion, cross-encoder re-ranking and Self-RAG loops that catch low-confidence answers.",
       tags: ["Python", "LangChain", "Pinecone"] },
   ];
+
+  const FEATURED = {
+    title: "LOCALAI FORGE", code: "https://github.com/Divesh-Kumar-Chordia/localai-forge",
+    why: "A frontier chatbot will always out-reason a local 8B model. What businesses actually need is different: documents that never leave the machine, answers they can verify sentence by sentence, and full engineering control over retrieval, prompts and guardrails. LocalAI Forge is a private, fully local RAG and agent platform built as a glass box, where every production concern is a visible, measurable feature.",
+    results: [
+      ["0.977", "Retrieval hit@1", "legal chunking + hybrid search + rerank, 43 labelled questions"],
+      ["95.7%", "End-to-end eval pass", "47-question golden set, prompt v4 (up from 85.1%)"],
+      ["0.972", "Faithfulness", "per-sentence grounding against cited sources"],
+      ["κ 0.80", "LLM judge vs human labels", "fact checklist + rules, 0 false passes"],
+      ["0.3–0.8 s", "Semantic-cache hit", "end to end, guarded against negation and number changes"],
+      ["24", "Deterministic tests in CI", "chunking, RRF, PII, injection, cache, judge, loops"],
+    ],
+    inside: [
+      ["Chat + live inspector", "every stage streamed: PII, cache, retrieval, rerank, route, grounding"],
+      ["Agent Lab", "LangGraph agent with a guard node, circuit breaker, policy gate and human approval"],
+      ["Multi-agent workflow", "planner → researcher → writer → reviewer, traced"],
+      ["Retrieval Lab", "BM25 vs dense vs hybrid vs rerank, with hit@k and MRR"],
+      ["4 chunking strategies", "fixed, recursive, legal-clause and parent-child"],
+      ["Evals & judge", "golden set, judge calibration, pairwise judging"],
+      ["Prompt registry", "versioned prompts, diffs, eval-gated promotion and rollback"],
+      ["Security", "reversible PII redaction and prompt-injection defense"],
+      ["Metrics, cost & latency", "p50/p95 per route, cache hit rate, TTFT breakdown"],
+      ["Debug an answer", "finds the first pipeline stage that lost the evidence"],
+    ],
+    maps: [["localai", "Chat pipeline"], ["localai-agent", "Guarded agent"], ["localai-hld", "Platform overview"]],
+    tags: ["Python", "FastAPI", "LangGraph", "Ollama", "Llama 3.1/3.2", "Chroma", "SQLite FTS5", "SSE"],
+  };
 
   const TIMELINE = [
     { status: "now", role: "SOFTWARE ENGINEER", org: "Contentstack · Bengaluru", when: "Aug 2024 – Present",
@@ -211,6 +235,69 @@
       { from: "route", fs: "l", to: "gen", ts: "r" }, { from: "gen", fs: "l", to: "ground", ts: "r" },
       { from: "ground", fs: "b", to: "ans", ts: "t" }, { from: "gen", fs: "b", to: "evals", ts: "l", label: "trace", dashed: true },
     ] },
+    "localai-agent": { h: 330, nodes: [
+      n("task", 10, 40, "TASK", "", "user", 110),
+      n("decide", 160, 40, "DECIDE", "grammar-constrained\nJSON action", "svc", 170),
+      n("guard", 380, 40, "GUARD NODE", "loop guard · policy\ncircuit breaker", "lib", 170),
+      n("act", 600, 40, "ACT", "call a tool", "queue", 150),
+      n("block", 380, 220, "BLOCKED / ASK", "side effects need\nhuman approval", "fail", 170),
+      n("ans", 10, 220, "ANSWER", "with a full trace", "user", 150),
+    ], edges: [
+      { from: "task", to: "decide" }, { from: "decide", to: "guard", label: "propose" }, { from: "guard", to: "act", label: "allow" },
+      { from: "act", fs: "b", to: "decide", ts: "b", mid: 180, label: "result", dashed: true },
+      { from: "guard", fs: "b", to: "block", ts: "t", fail: true },
+      { from: "decide", fs: "b", fo: -50, to: "ans", ts: "t", label: "finalize" },
+    ] },
+    "localai-hld": { h: 380, nodes: [
+      n("ui", 10, 150, "BROWSER", "vanilla JS · SSE", "user", 130),
+      n("api", 180, 150, "FASTAPI", "REST + SSE", "svc", 120),
+      n("pipe", 340, 20, "CHAT PIPELINE", "plain Python", "svc", 170),
+      n("agent", 340, 110, "AGENT", "LangGraph + guard", "svc", 170),
+      n("wf", 340, 200, "WORKFLOW", "4 agents, traced", "svc", 170),
+      n("ev", 340, 290, "EVALS + PROMPTS", "judge · registry", "lib", 170),
+      n("ol", 570, 20, "OLLAMA", "Llama 8B + 3B", "queue", 180),
+      n("ch", 570, 110, "CHROMA", "dense vectors", "store", 180),
+      n("sq", 570, 200, "SQLITE", "FTS5 · traces · cache", "store", 180),
+      n("rr", 570, 290, "RERANKER", "MiniLM cross-encoder", "svc", 180),
+    ], edges: [
+      { from: "ui", to: "api" },
+      { from: "api", to: "pipe", mid: 320 }, { from: "api", to: "agent", mid: 320 }, { from: "api", to: "wf", mid: 320 }, { from: "api", to: "ev", mid: 320 },
+      { from: "pipe", to: "ol", mid: 545 }, { from: "pipe", to: "ch", mid: 545 }, { from: "pipe", to: "sq", mid: 545 }, { from: "pipe", to: "rr", mid: 545 },
+    ] },
+    "automation-lab": { h: 520, nodes: [
+      n("op", 10, 20, "LAB OPERATOR", "", "user", 190),
+      n("orch", 10, 110, "ORCHESTRATOR", "29 automation scripts", "svc", 190),
+      n("scen", 10, 200, "SCENARIOS", "lifecycle · multi-user", "svc", 190),
+      n("ops", 10, 290, "CMA OPERATIONS", "TOTP sign-in", "svc", 190),
+      n("apps", 290, 20, "CONTENT APPS", "digest · news · entries", "user", 190),
+      n("del", 290, 110, "DELIVERY API", "published content", "svc", 190),
+      n("cma", 560, 110, "CONTENTSTACK CMA", "", "svc", 190),
+      n("kf", 560, 190, "KAFKA", "meter events", "queue", 190),
+      n("mg", 560, 270, "MONGO", "analytics store", "store", 190),
+      n("es", 560, 350, "ELASTICSEARCH", "metrics", "store", 190),
+      n("dash", 560, 430, "DASHBOARDS", "", "user", 190),
+      n("run", 10, 430, "RUN DASHBOARD", "meter coverage", "lib", 190),
+    ], edges: [
+      { from: "op", fs: "b", to: "orch", ts: "t" }, { from: "orch", fs: "b", to: "scen", ts: "t" }, { from: "scen", fs: "b", to: "ops", ts: "t" },
+      { from: "ops", to: "cma", mid: 520, label: "calls CMA" }, { from: "op", to: "apps" }, { from: "apps", fs: "b", to: "del", ts: "t" },
+      { from: "cma", fs: "b", to: "kf", ts: "t" }, { from: "kf", fs: "b", to: "mg", ts: "t" }, { from: "mg", fs: "b", to: "es", ts: "t" }, { from: "es", fs: "b", to: "dash", ts: "t" },
+      { from: "dash", fs: "l", to: "run", ts: "r", label: "validates" },
+    ] },
+    gitpulse: { h: 470, nodes: [
+      n("user", 10, 20, "GITHUB USER", "", "user", 160),
+      n("auth", 220, 20, "OAUTH LOGIN", "token exchange", "svc", 160),
+      n("app", 440, 20, "DASHBOARD APP", "", "svc", 180),
+      n("act", 10, 160, "ACTIVITY", "timeline · heatmap", "user", 190),
+      n("code", 285, 160, "CODE SEARCH", "file tree · history", "user", 190),
+      n("teams", 560, 160, "TEAM ANALYTICS", "members · leaderboard", "user", 190),
+      n("fetch", 245, 290, "API FETCHERS", "activities · teams · repos", "svc", 270),
+      n("gh", 300, 390, "GITHUB API", "", "store", 160),
+    ], edges: [
+      { from: "user", to: "auth" }, { from: "auth", to: "app" },
+      { from: "app", fs: "b", fo: -50, to: "act", ts: "t" }, { from: "app", fs: "b", to: "code", ts: "t", mid: 110 }, { from: "app", fs: "b", fo: 50, to: "teams", ts: "t" },
+      { from: "act", fs: "b", to: "fetch", ts: "t", to2: -80 }, { from: "code", fs: "b", to: "fetch", ts: "t" }, { from: "teams", fs: "b", to: "fetch", ts: "t", to2: 80 },
+      { from: "fetch", fs: "b", to: "gh", ts: "t" },
+    ] },
     rag: { h: 330, nodes: [
       n("docs", 10, 30, "DOCUMENTS", "", "src", 130), n("chunk", 170, 30, "CHUNK", "", "svc", 130),
       n("embed", 330, 30, "EMBED", "", "svc", 130), n("vdb", 490, 30, "VECTOR DB", "Chroma / Pinecone", "store", 150),
@@ -272,27 +359,17 @@
     }
     return `<svg viewBox="0 0 ${W} ${spec.h}" width="100%" role="img" aria-label="System map" shape-rendering="crispEdges">${out}</svg>`;
   }
-  const DIAGRAMS = {
-    "automation-lab": { src: "assets/diagrams/automation-lab.png", alt: "Architecture of the Analytics Automation Lab: lifecycle automation scripts call the Contentstack CMA, meter events flow through Kafka, Mongo and Elasticsearch into analytics dashboards, and a run dashboard renders meter coverage" },
-    gitpulse: { src: "assets/diagrams/gitpulse.png", alt: "Architecture of GitPulse: OAuth login, an activity dashboard, code exploration and team analytics views, all fed by GitHub API fetchers" },
-  };
   function openMap(key, title, why) {
     $("#map-title").textContent = title;
     $("#map-why").textContent = why;
-    const pic = DIAGRAMS[key];
-    if (pic) {
-      $("#map-svg").innerHTML = `<img src="${pic.src}" alt="${esc(pic.alt)}" class="h-auto w-full" style="image-rendering:auto" />`;
-      $("#map-legend").innerHTML = `<li>Architecture diagram generated from the repository with GitDiagram.</li>`;
-      $("#map").showModal(); sfx.pipe(); return;
-    }
     $("#map-svg").innerHTML = drawMap(MAPS[key]);
     const used = [...new Set(MAPS[key].nodes.map((d) => d.kind))];
     $("#map-legend").innerHTML = used.map((k) => `<li class="flex items-center gap-2"><span class="inline-block h-3 w-3 border-2 border-ink" style="background:${KINDS[k].fill}"></span>${KINDS[k].name}</li>`).join("")
       + `<li class="flex items-center gap-2"><span class="inline-block w-5 border-t-[3px] border-dashed border-ink"></span>Feedback / async</li>`;
     $("#map").showModal(); sfx.pipe();
   }
-  const mapBtn = (key) => `<button type="button" class="px-btn mt-3 bg-sky px-3 py-2 text-px-xs text-white" data-map="${key}">
-      <img src="${SPR("qblock")}" alt="" class="h-4 w-4" />View system map</button>`;
+  const mapBtn = (key, label = "View system map") => `<button type="button" class="px-btn mt-3 bg-sky px-3 py-2 text-px-xs text-white" data-map="${key}">
+      <img src="${SPR("qblock")}" alt="" class="h-4 w-4" />${label}</button>`;
 
   /* ================= sound (off by default) ================= */
   let soundOn = store.get("sdb-sound", false), actx;
@@ -537,6 +614,33 @@
     const r = card.getBoundingClientRect(); popScore("200", r.left + r.width / 2 - 12, r.top - 24);
   }));
 
+  $("#featured").innerHTML = `
+    <article class="px-card p-6 sm:p-8">
+      <div class="flex flex-wrap items-center gap-4">
+        <img src="${SPR("fireflower")}" alt="" class="sprite h-10 w-10" />
+        <div>
+          <p class="font-pixel text-px-xs text-luigi-dark">FEATURED SIDE QUEST · AI ENGINEERING</p>
+          <h4 class="mt-2 font-pixel text-px-md leading-7 sm:text-px-lg sm:leading-8">${FEATURED.title}</h4>
+        </div>
+        <span class="ml-auto border-2 border-ink bg-coin px-2 py-1 font-pixel text-px-xs">100% LOCAL · NO API KEYS</span>
+      </div>
+      <div class="mt-6 grid gap-8 lg:grid-cols-[1.25fr_1fr]">
+        <div>
+          <p class="font-pixel text-px-xs text-ink/50">WHY IT EXISTS</p>
+          <p class="mt-2 font-medium">${esc(FEATURED.why)}</p>
+          <p class="mt-6 font-pixel text-px-xs text-ink/50">WHAT’S INSIDE</p>
+          <ul class="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">${FEATURED.inside.map(([t, d]) => `<li class="relative pl-5 before:absolute before:left-0 before:top-[9px] before:h-2 before:w-2 before:bg-luigi"><b class="font-semibold">${esc(t)}</b><br><span class="text-[15px] text-ink/70">${esc(d)}</span></li>`).join("")}</ul>
+          <div class="mt-4 flex flex-wrap gap-x-3">${FEATURED.maps.map(([k, l]) => mapBtn(k, l)).join("")}</div>
+        </div>
+        <div class="px-panel p-5 sm:p-6">
+          <p class="font-pixel text-px-xs text-white/60">MEASURED RESULTS</p>
+          <ul class="mt-2 divide-y-2 divide-dashed divide-white/15">${FEATURED.results.map(([v, l, d]) => `<li class="py-3"><p class="font-pixel text-px-md text-coin">${esc(v)}</p><p class="mt-1 font-semibold text-white">${esc(l)}</p><p class="text-[14px] text-white/60">${esc(d)}</p></li>`).join("")}</ul>
+        </div>
+      </div>
+      <div class="mt-6 flex flex-wrap items-center gap-2">${FEATURED.tags.map((t) => `<span class="px-tag bg-luigi text-white">${esc(t)}</span>`).join("")}
+        <a class="px-btn ml-auto bg-white px-3 py-2 text-px-xs" href="${FEATURED.code}" target="_blank" rel="noopener">Code</a></div>
+    </article>`;
+
   const sideLink = (href, label, cls) => href ? `<a class="px-btn ${cls} px-3 py-2 text-px-xs" href="${href}" target="_blank" rel="noopener">${label}</a>` : "";
   $("#side-quests").innerHTML = SIDE_QUESTS.map((q) => `
     <article class="px-card flex flex-col p-6">
@@ -552,8 +656,10 @@
 
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-map]"); if (!b) return;
-    const lv = LEVELS.find((l) => l.map === b.dataset.map), sq = SIDE_QUESTS.find((q) => q.map === b.dataset.map);
-    openMap(b.dataset.map, (lv || sq).title, lv ? lv.why : sq.body);
+    const key = b.dataset.map, fm = FEATURED.maps.find(([k]) => k === key);
+    if (fm) return openMap(key, `${FEATURED.title} · ${fm[1].toUpperCase()}`, FEATURED.why);
+    const lv = LEVELS.find((l) => l.map === key), sq = SIDE_QUESTS.find((q) => q.map === key);
+    openMap(key, (lv || sq).title, lv ? lv.why : sq.body);
   });
   $("#map").addEventListener("click", (e) => { if (e.target.id === "map") e.target.close(); });
 
