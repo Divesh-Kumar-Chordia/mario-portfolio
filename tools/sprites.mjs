@@ -13,7 +13,7 @@ const PAL = {
   Y: "#f8b800", y: "#fce4a0", o: "#b06a00",
   G: "#00b259", g: "#006a2e", l: "#8ee68e",
   N: "#b84418", p: "#f8a878", c: "#fce4b0",
-  L: "#a8d8f8", U: "#3c64d8", u: "#1c3c9c", v: "#8cacff", X: "#a8a8b8", x: "#5c5c70",
+  L: "#a8d8f8", U: "#3c64d8", u: "#1c3c9c", v: "#8cacff",
   P: "#f878c8", q: "#b83c8c", e: "#f0d0b0",
 };
 
@@ -441,26 +441,5 @@ svg([...BOSS_TOP, "...K.K....K.K...", "..K..K....K..K..", ".K...K....K...K."], "
 svg([...BOSS_TOP, "...K.K....K.K...", "...K.K....K.K...", "....K.K..K.K...."], "boss-2");
 svg(["................", "................", "................", "................", "................", "................", "................", "................",
   "..Y.RRRRRRRR.Y..", ".RRKWKRRRRKWKRR.", ".rRrRrRrRrRrRrR.", "rrrrrrrrrrrrrrrr", ".K.K..K..K..K.K.", "................"], "boss-flat");
-
-
-/* ---------- thwomp: the stone block that guards the castle ---------- */
-svg([
-  "..KKKKKKKKKKKK..",
-  ".KXXXXXXXXXXXXK.",
-  "KXXxXXXXXXXXxXXK",
-  "KXXXXXXXXXXXXXXK",
-  "KXKKKXXXXXXKKKXK",
-  "KXXWKXXXXXXKWXXK",
-  "KXXWKXXXXXXKWXXK",
-  "KXXXXXXXXXXXXXXK",
-  "KXXXXXXxxXXXXXXK",
-  "KXXKKKKKKKKKKXXK",
-  "KXXKWKWKWKWKKXXK",
-  "KXXKKKKKKKKKKXXK",
-  "KXxXXXXXXXXXXxXK",
-  "KXXXXXXXXXXXXXXK",
-  ".KXXXXXXXXXXXXK.",
-  "..KKKKKKKKKKKK..",
-], "thwomp");
 
 console.log("sprites written to assets/sprites/");
