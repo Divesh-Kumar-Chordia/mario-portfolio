@@ -19,11 +19,11 @@
 
   /* ================= content ================= */
   const SKILLS = [
-    { item: "SUPER MUSHROOM", sprite: "mushroom", kind: "Backend", skills: ["Go", "TypeScript", "JavaScript", "Python", "SQL", "NestJS", "Node.js", "Express", "FastAPI", "gRPC", "Protobuf", "REST / OpenAPI", "System design"] },
+    { item: "SUPER MUSHROOM", sprite: "mushroom", kind: "Backend", skills: ["Go", "TypeScript", "JavaScript", "Python", "Java", "C++", "SQL", "NestJS", "Node.js", "Express", "FastAPI", "gRPC", "Protobuf", "REST / OpenAPI", "System design"] },
     { item: "1-UP MUSHROOM", sprite: "oneup", kind: "Data", skills: ["Elasticsearch", "MongoDB", "Apache Spark", "Kafka", "AWS Athena", "Redis", "Redis Lua", "ILM tiers"] },
     { item: "STARMAN", sprite: "star", kind: "Platform", skills: ["Docker", "Kubernetes", "GoCD", "AWS", "GCP", "Azure", "Snyk", "Trivy", "Git"] },
     { item: "COIN", sprite: "coin", kind: "Frontend & testing", skills: ["React", "Redux", "Highcharts", "Highstock", "Webpack", "Vite", "Storybook", "Playwright"] },
-    { item: "FIRE FLOWER", sprite: "fireflower", kind: "GenAI & RAG", skills: ["LangChain", "LangGraph", "LlamaIndex", "Advanced RAG", "Self-RAG", "Agents", "Tool calling", "Guardrails", "LLM APIs", "vLLM", "Ollama"] },
+    { item: "FIRE FLOWER", sprite: "fireflower", kind: "GenAI & RAG", skills: ["LangChain", "LangGraph", "LlamaIndex", "Advanced RAG", "Self-RAG", "Hybrid search", "Rerankers", "Agents", "Tool calling", "Guardrails", "LLM evals", "Prompt registry", "LLM APIs", "vLLM", "Ollama"] },
     { item: "? BLOCK", sprite: "qblock", kind: "AI-first workflow", skills: ["Claude Skills", "MCP", "Cursor", "Agent Mode", "Rules & hooks"] },
   ];
 
@@ -46,9 +46,9 @@
       built: "I build Spark ETL pipelines that aggregate around a billion records from sources like Cloudflare and Kafka and persist them in Elasticsearch. On top sits the customer-facing Analytics API: I onboard new products and analytics domains, merge sources without changing the contract customers rely on, fixed v1/v2 output anomalies, and replaced generic failures with errors that explain what went wrong.",
       tags: ["Apache Spark", "Elasticsearch", "Kafka", "API design"] },
     { quest: "main", map: "contentops", title: "CONTENT OPERATIONS ANALYTICS", stat: "67 OPERATION-SEQUENCE CASES",
-      why: "Content teams need to see where entries get stuck in a workflow. The legacy collections can't be joined, have no reliable timestamps, and entry counts multiply across branch × content type × locale.",
+      why: "Content teams need to see where entries get stuck in a workflow, and who they are stuck with. The legacy core product allows only single-level joins, has no reliable timestamps, and entry counts multiply across branch × content type × locale.",
       flow: ["LEGACY MONGO", "INDEXED DAILY SCAN", "COUNTS", "DASHBOARDS", "EVALUATOR"],
-      built: "A low-cost daily scan that runs on Mongo indexes instead of joins. It powers Content Life Cycle, Workflow Health and Team Adoption. To prove the numbers, I built an Evaluator: it seeds realistic data, reads the dashboards through Playwright (DOM and screenshots) and compares every count with what the product rules say it should be. The analytics are validated against 67 operation-sequence cases, including orphaned-record edge cases.",
+      built: "A low-cost daily scan that runs on Mongo indexes instead of deep joins. It powers three surfaces: Content Life Cycle (created → ready to publish → published), Workflow Health (where content is stuck and with whom) and Team Adoption (active vs inactive users, work velocity and project metrics). To prove the numbers, I built an Evaluator: it seeds realistic data, reads the dashboards through Playwright (DOM and screenshots) and compares every count with what the product rules say it should be. The analytics are validated against 67 operation-sequence cases, including orphaned-record edge cases.",
       tags: ["MongoDB", "Elasticsearch", "Playwright"] },
     { quest: "main", map: "discovery", title: "PLATFORM DISCOVERY", stat: "17 CAPABILITIES · 3 PRODUCTION APPS",
       why: "Customers couldn't easily see what they had bought and use, bought but haven't touched lately, or haven't bought yet. The answer was scattered across many systems.",
@@ -58,16 +58,19 @@
   ];
 
   const SIDE_QUESTS = [
+    { title: "LOCALAI FORGE", sprite: "fireflower", map: "localai",
+      body: "A private, fully local RAG and agent platform on Ollama, built as a glass box: hybrid retrieval with reranking, a semantic cache, per-sentence grounding checks, guarded LangGraph agents, eval-gated prompt rollback, tracing and PII redaction. Retrieval hit@1 0.977; 95.7% pass on a 47-question golden set; LLM judge calibrated to κ 0.80.",
+      tags: ["Python", "FastAPI", "LangGraph", "Ollama", "Chroma"], code: "https://github.com/Divesh-Kumar-Chordia/localai-forge" },
     { title: "JEVSTREAM", sprite: "star", map: "jevstream",
       body: "Priority-based ticket routing. A FastAPI service judges each ticket's urgency and stores it in a Redis sorted set; workers claim the most urgent first through atomic Lua scripts with expiring leases, so a crashed worker's ticket goes back in the queue.",
       tags: ["Python", "FastAPI", "Redis", "Lua"], code: "https://github.com/Divesh-Kumar-Chordia/jevstream" },
-    { title: "ANALYTICS AUTOMATION LAB", sprite: "oneup",
+    { title: "ANALYTICS AUTOMATION LAB", sprite: "oneup", map: "automation-lab",
       body: "A testing lab for Contentstack analytics: a Delivery API site, 29 automation scripts covering the content lifecycle, multi-user simulation, every analytics meter dimension, and Launch URL warming.",
       tags: ["React", "Vite", "Node.js"], live: "https://top-url-website-making.vercel.app", code: "https://github.com/DiveshKumarChordia/contentstack-analytics-automation-lab" },
     { title: "LUMEN VISUAL EXPERIENCE", sprite: "fireflower",
       body: "A Contentstack Visual Builder site where a script creates the stack, environment, tokens, content types and entries in ten idempotent steps. Live Preview covers drafts, Releases and Timeline.",
       tags: ["TypeScript", "Live Preview", "GraphQL"], live: "https://lumen-rbac-demo.vercel.app", code: "https://github.com/DiveshKumarChordia/lumen-visual-experience" },
-    { title: "GITPULSE", sprite: "coin",
+    { title: "GITPULSE", sprite: "coin", map: "gitpulse",
       body: "A GitHub organization dashboard: every commit and pull request on one timeline, a contribution heatmap, filters, and code search across all of an org's repositories.",
       tags: ["JavaScript", "GitHub API", "OAuth"], live: "https://gitpulse-dashboard.vercel.app", code: "https://github.com/DiveshKumarChordia/gitpulse-dashboard" },
     { title: "RAG SYSTEMS", sprite: "mushroom", map: "rag",
@@ -81,12 +84,13 @@
       points: [
         "Authored 500+ merged pull requests and reviewed 515 across 35 repositories.",
         "Primary contact for production RCAs on the audit logging platform I built.",
-        "Manage releases and triage customer issues.",
-        "Wrote dev-environment scripts that simulate real customer usage patterns and generate the cases needed to cover every product capability.",
-        "Principal author of cs-highcharts, the shared charting library. A log10-based tick-interval algorithm fixed a recurring axis-label bug across every chart.",
+        "Run release cycles and ceremonies for the analytics line, triage customer issues, and have anchored the team's daily standup for over a year.",
+        "Wrote scripts that simulate real customer usage patterns to auto-generate test cases, cutting manual test-environment setup.",
+        "Principal author of cs-highcharts, the shared charting library behind the analytics dashboards: new chart types and features, plus a log10-based tick-interval algorithm that ended duplicate axis labels under auto-scaling.",
+        "Build reusable UI widgets and components for the core analytics dashboards, and drive front-end redesigns that make the data easier to read.",
         "Delivered 3 CMS analytics dashboards end to end: metering instrumentation, Spark rollups, Elasticsearch snapshots, serving processors, React widgets and plan gating.",
         "Built a paginated Athena export for 10,000+ records, with a precheck that surfaces row-limit failures before a job runs.",
-        "Led a security sweep across 10 services: Node.js 24, Go 1.24, non-root images, zlib/OpenSSL CVE fixes, Snyk and Trivy in the dev loop.",
+        "Led a security sweep across 10 services: Node.js 24, Go 1.24, Alpine 3.23 multi-stage non-root images, zlib/OpenSSL CVE fixes, and Snyk + Trivy scans that catch vulnerabilities before merge.",
         "Use Claude Skills and MCP in my daily workflow; lately they help me build Node.js backends much faster.",
       ] },
     { status: "clear", role: "SOFTWARE ENGINEER INTERN", org: "Contentstack · Bengaluru", when: "Jan 2024 – Jul 2024",
@@ -190,6 +194,23 @@
       { from: "proc", fs: "t", fo: 30, to: "active", ts: "b", to2: 30, label: "expired", dashed: true },
       { from: "proc", fs: "l", to: "workers", ts: "r", label: "handle" }, { from: "workers", fs: "b", to: "done", ts: "t" },
     ] },
+    localai: { h: 420, nodes: [
+      n("q", 10, 30, "QUESTION", "", "user", 120),
+      n("pii", 160, 30, "PII REDACT", "reversible", "svc", 130),
+      n("cache", 320, 30, "SEMANTIC CACHE", "grounded only", "store", 150),
+      n("retr", 500, 30, "HYBRID SEARCH", "dense + BM25 · RRF", "svc", 160),
+      n("rerank", 600, 190, "RERANK", "cross-encoder", "svc", 150),
+      n("route", 410, 190, "ROUTE", "3B or 8B model", "lib", 150),
+      n("gen", 210, 190, "GENERATE", "Llama · Ollama · SSE", "queue", 160),
+      n("ground", 10, 190, "GROUNDING", "per-sentence check", "lib", 160),
+      n("ans", 10, 330, "ANSWER", "with citations", "user", 160),
+      n("evals", 410, 330, "TRACES + EVALS", "47 golden Qs · 95.7%", "store", 170),
+    ], edges: [
+      { from: "q", to: "pii" }, { from: "pii", to: "cache" }, { from: "cache", to: "retr", label: "miss" },
+      { from: "retr", fs: "b", to: "rerank", ts: "t" }, { from: "rerank", fs: "l", to: "route", ts: "r" },
+      { from: "route", fs: "l", to: "gen", ts: "r" }, { from: "gen", fs: "l", to: "ground", ts: "r" },
+      { from: "ground", fs: "b", to: "ans", ts: "t" }, { from: "gen", fs: "b", to: "evals", ts: "l", label: "trace", dashed: true },
+    ] },
     rag: { h: 330, nodes: [
       n("docs", 10, 30, "DOCUMENTS", "", "src", 130), n("chunk", 170, 30, "CHUNK", "", "svc", 130),
       n("embed", 330, 30, "EMBED", "", "svc", 130), n("vdb", 490, 30, "VECTOR DB", "Chroma / Pinecone", "store", 150),
@@ -251,9 +272,19 @@
     }
     return `<svg viewBox="0 0 ${W} ${spec.h}" width="100%" role="img" aria-label="System map" shape-rendering="crispEdges">${out}</svg>`;
   }
+  const DIAGRAMS = {
+    "automation-lab": { src: "assets/diagrams/automation-lab.png", alt: "Architecture of the Analytics Automation Lab: lifecycle automation scripts call the Contentstack CMA, meter events flow through Kafka, Mongo and Elasticsearch into analytics dashboards, and a run dashboard renders meter coverage" },
+    gitpulse: { src: "assets/diagrams/gitpulse.png", alt: "Architecture of GitPulse: OAuth login, an activity dashboard, code exploration and team analytics views, all fed by GitHub API fetchers" },
+  };
   function openMap(key, title, why) {
     $("#map-title").textContent = title;
     $("#map-why").textContent = why;
+    const pic = DIAGRAMS[key];
+    if (pic) {
+      $("#map-svg").innerHTML = `<img src="${pic.src}" alt="${esc(pic.alt)}" class="h-auto w-full" style="image-rendering:auto" />`;
+      $("#map-legend").innerHTML = `<li>Architecture diagram generated from the repository with GitDiagram.</li>`;
+      $("#map").showModal(); sfx.pipe(); return;
+    }
     $("#map-svg").innerHTML = drawMap(MAPS[key]);
     const used = [...new Set(MAPS[key].nodes.map((d) => d.kind))];
     $("#map-legend").innerHTML = used.map((k) => `<li class="flex items-center gap-2"><span class="inline-block h-3 w-3 border-2 border-ink" style="background:${KINDS[k].fill}"></span>${KINDS[k].name}</li>`).join("")
